@@ -116,7 +116,7 @@
       level: 'SSR', showLabel: true, showStars: true,
       x: 972, y: 800, size: 44, align: 'right', rotation: -7, skew: 12,
       font: 'Shippori Mincho B1', weight: 800, letterSpacing: -2,
-      starScale: 0.74, starGap: -1, starY: -4, starRise: 0
+      starScale: 0.74, starGap: -1, starY: 1, starRise: 0
     }, RARITY_PRESETS.SSR)
   };
 
