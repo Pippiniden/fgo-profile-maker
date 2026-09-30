@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FGO風キャラ紹介メーカー</title>
+  <meta name="description" content="自作イラストを入れて、FGO風のキャラ紹介画像（1024×1024 PNG）を作れる非公式ファンメイドツールです。画像はブラウザ内だけで処理されます。">
+  <meta property="og:title" content="FGO風キャラ紹介メーカー">
+  <meta property="og:description" content="自作イラストでFGO風のキャラ紹介画像を作れる非公式ファンメイドツール">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#2a2118">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;500;600;700;900&family=Shippori+Mincho+B1:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@400;500;600;700;800;900&family=Kaisei+Tokumin:wght@400;500;700;800&family=Zen+Antique&family=Hina+Mincho&family=Yuji+Syuku&family=Dela+Gothic+One&family=Reggae+One&family=RocknRoll+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>FGO風キャラ紹介メーカー</h1>
+    <p class="lead">自作イラストを入れて、キャラ紹介画像（1024×1024 PNG）を作るファンメイドツールです。<br class="pc-only">画像はすべてお使いのブラウザ内で処理され、どこにも送信されません。</p>
+  </header>
+
+  <main class="layout">
+    <section class="preview-pane" aria-label="プレビュー">
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="stage" width="1024" height="1024" tabindex="0" aria-label="作成中の画像プレビュー"></canvas>
+        <div class="drop-overlay" id="dropOverlay">ここに画像をドロップしてキャラ画像に設定</div>
+      </div>
+      <div class="stage-bar">
+        <span class="sel-label" id="selLabel">要素をタップすると選択できます</span>
+        <button type="button" class="btn small ghost" id="deselectBtn" hidden>選択解除</button>
+        <button type="button" class="btn primary" id="exportBtn">PNGで保存</button>
+      </div>
+    </section>
+
+    <section class="controls" id="controls" aria-label="編集">
+      <div class="howto">
+        <strong>操作方法</strong>
+        <ul>
+          <li>プレビュー上の文字や画像は<b>ドラッグで移動</b>できます。</li>
+          <li>選択中の要素は、PCなら<b>ホイールで拡大縮小</b>・<b>Shift＋ホイールで回転</b>・<b>矢印キーで1px移動</b>。</li>
+          <li>スマホなら<b>2本指でピンチ（拡大縮小）と回転</b>ができます。</li>
+          <li>細かい位置・フォント・縁取りは各項目の「詳細設定」から調整できます。</li>
+        </ul>
+      </div>
+      <!-- 各設定項目は js/app.js で生成します -->
+      <div id="panels"></div>
+      <div class="global-actions">
+        <button type="button" class="btn" id="resetLayoutBtn">レイアウトと装飾をすべて初期化（文章と画像は残ります）</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <section class="credits">
+      <h2>クレジット</h2>
+      <p class="small">
+        フォント：<a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a>（SIL Open Font License）
+      </p>
+      <p class="small">
+        クラスアイコンなどの画像は、ご自身で用意したものをアップロードしてご利用ください。
+      </p>
+    </section>
+    <section class="disclaimer">
+      <p class="small">
+        本ツールは非公式のファンメイドツールです。『Fate/Grand Order』公式およびTYPE-MOONをはじめとする権利者様とは一切関係ありません。
+        作成した画像の公開は、各権利者様のガイドラインに沿ってお楽しみください。
+      </p>
+    </section>
+  </footer>
+
+  <div class="modal" id="exportModal" hidden>
+    <div class="modal-body" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+      <h2 id="exportTitle">画像ができました</h2>
+      <img id="exportImg" alt="作成した画像">
+      <p class="small">うまく保存できないときは、画像を長押し（PCは右クリック）して保存してください。</p>
+      <div class="modal-actions">
+        <a class="btn primary" id="downloadLink" download="profile.png">ダウンロード</a>
+        <button type="button" class="btn" id="closeModalBtn">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
