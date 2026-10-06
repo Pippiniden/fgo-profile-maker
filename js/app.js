@@ -100,16 +100,16 @@
     }),
     profHead: textBase(Object.assign({}, headingStyle, { text: 'プロフィール', x: 26, y: 146, lineLength: 228 })),
     profBody: textBase({
-      text: 'ホメロスの叙事詩にただ一行だけ現れる、影の英雄。\nトロイアの戦場で英雄たちの背後に立ち続け、\nその武勲はすべて他者の名で語り継がれた。\n詩人に真名を歌い忘れられた「名も無き者」。',
+      text: '多くのギリシア神話にその名を刻む英雄。\n彼の残した物語はギリシア中で語り継がれた。\n悲劇や喜劇への登場も多く、\nそのキャラクター性は詩人によって描き方が変わる。',
       x: 60, y: 203, size: 23, font: 'Noto Serif JP', weight: 800, color: '#111111', lineHeight: 1.6, letterSpacing: -0.5, wrap: 540,
       s1Width: 3.5, s1Color: '#ffffff'
     }),
     catch: textBase(Object.assign({}, bigTextStyle, {
-      text: '名を奪われし影、\n語られぬ剣の担い手', x: 190, y: 690, size: 54, rotation: -6, lineHeight: 0.98, lineShift: 170, letterSpacing: -3,
+      text: '全ギリシアで活躍した\n語られぬ剣の担い手', x: 190, y: 690, size: 54, rotation: -6, lineHeight: 0.98, lineShift: 170, letterSpacing: -3,
       color: '#e8303a', color2: '#850a14'
     })),
     name: textBase(Object.assign({}, bigTextStyle, {
-      text: 'アグノストス', x: 946, y: 738, size: 58, align: 'right', rotation: -7, letterSpacing: -2,
+      text: 'アンドラス・アントロポス', x: 946, y: 738, size: 58, align: 'right', rotation: -7, letterSpacing: -2,
       color: '#4a7ad8', color2: '#0f2466'
     })),
     rarity: Object.assign({
