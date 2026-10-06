@@ -344,13 +344,13 @@
    * 太さに合わせて方向数を増やし、太くしても角が欠けないようにする。
    * （drop-shadow や -webkit-text-stroke は書き出し時にブラウザごとの差が大きいため使わない）
    */
+  // [要素ID, 1倍のときの太さ(px), 縁の色, 縁の外側に付ける影 [x, y, ぼかし, 色]]
   const OUTLINES = [
-    // [要素ID, 1倍のときの太さ(px), 縁の色, 縁の外側に付ける影]
-    ['nameText', 3, '#0b1633', '2px 5px 6px rgba(0, 0, 0, .6)'],
-    ['subText', 2, '#0b1633', '1px 3px 4px rgba(0, 0, 0, .5)'],
-    ['headText', 2, '#1d2633', '3px 4px 0 #1d2633, 4px 6px 8px rgba(0, 0, 0, .55)'],
-    ['classEn', 2, '#262626', '0 4px 7px rgba(0, 0, 0, .75)'],
-    ['classRuby', 1.5, '#111111', '0 2px 3px rgba(0, 0, 0, .8)']
+    ['nameText', 3, '#0b1633', [[2, 5, 6, 'rgba(0, 0, 0, .6)']]],
+    ['subText', 2, '#0b1633', [[1, 3, 4, 'rgba(0, 0, 0, .5)']]],
+    ['headText', 2, '#1d2633', [[3, 4, 0, '#1d2633'], [4, 6, 8, 'rgba(0, 0, 0, .55)']]],
+    ['classEn', 2, '#262626', [[0, 4, 7, 'rgba(0, 0, 0, .75)']]],
+    ['classRuby', 1.5, '#111111', [[0, 2, 3, 'rgba(0, 0, 0, .8)']]]
   ];
 
   function outlineShadow(width, color, extra) {
@@ -369,7 +369,7 @@
         parts.push(`${r}px ${r}px 0 ${color}`, `${-r}px ${r}px 0 ${color}`, `${r}px ${-r}px 0 ${color}`, `${-r}px ${-r}px 0 ${color}`);
       }
     }
-    if (extra) parts.push(extra);
+    for (const [x, y, blur, c] of extra) parts.push(`${x}px ${y}px ${blur}px ${c}`);
     return parts.join(', ');
   }
 
@@ -377,8 +377,7 @@
     const scale = Math.max(0, Number(state.outlineScale) || 0);
     for (const [id, base, color, extra] of OUTLINES) {
       const el = $(id);
-      const target = id === 'headText' ? el : el.parentElement;
-      target.style.textShadow = outlineShadow(base * scale, color, extra);
+      el.parentElement.style.textShadow = outlineShadow(base * scale, color, extra);
     }
   }
 
@@ -404,7 +403,13 @@
     const sub = setText('subText', 'sub', s.sub.text);
     sub.parentElement.style.fontSize = s.sub.size + 'px';
     const head = setText('headText', 'heading', s.heading.text);
-    head.style.fontSize = s.heading.size + 'px';
+    head.parentElement.style.fontSize = s.heading.size + 'px';
+    // 行の高さと上下位置を整数pxにそろえる（書き出し時に文字が1pxずれないように）
+    name.parentElement.style.lineHeight = Math.round(s.name.size * 1.08) + 'px';
+    sub.parentElement.style.lineHeight = Math.round(s.sub.size * 1.08) + 'px';
+    const title = name.parentElement.parentElement;
+    const titleH = name.parentElement.offsetHeight + (s.sub.text ? sub.parentElement.offsetHeight + 2 : 0);
+    title.style.paddingTop = Math.max(0, Math.round((96 - titleH) / 2)) + 'px';
     fitWidth(name, 800, '100% 50%');
     fitWidth(sub, 800, '100% 50%');
 
@@ -1185,7 +1190,97 @@
     return ios || (/AppleWebKit/.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Android/.test(ua));
   })();
 
-  async function snapshot(node, opts) {
+  /*
+   * 縁取りのある文字は、書き出し時だけ Canvas に直接描く。
+   * スマホのブラウザ（特に iPhone/iPad の Safari）は html-to-image が使う仕組み
+   * （SVG の foreignObject）の中で text-shadow や縁取りを描かないことがあるため、
+   * 画像化するときは HTML 側の文字を隠し、同じ位置・同じフォントで Canvas に描き直す。
+   */
+  function textLayouts() {
+    const sRect = stage.getBoundingClientRect();
+    const scale = sRect.width / W || 1;
+    const out = [];
+    for (const [id, base, color, extra] of OUTLINES) {
+      const el = $(id);
+      const text = el.textContent;
+      if (!text.trim() || !el.offsetWidth) continue;
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      const ls = parseFloat(cs.letterSpacing);
+      // ベースラインの位置はブラウザに実際に測らせる（高さ0の目印を文字の並びに置く）
+      const mark = document.createElement('span');
+      mark.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+      el.appendChild(mark);
+      const baseline = (mark.getBoundingClientRect().top - r.top) / scale;
+      mark.remove();
+      out.push({
+        el, text, color, extra,
+        width: base * Math.max(0, Number(state.outlineScale) || 0),
+        x: (r.left - sRect.left) / scale,
+        y: (r.top - sRect.top) / scale,
+        baseline,
+        sx: (r.width / scale) / el.offsetWidth,
+        font: `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`,
+        fill: cs.color,
+        spacing: isFinite(ls) ? ls : 0
+      });
+    }
+    return out;
+  }
+
+  // 1文字ずつ間隔を空けて描く（ctx.letterSpacing が使えないブラウザ用）
+  function drawString(g, t, x, y, spacing, mode) {
+    if (!spacing || 'letterSpacing' in g) {
+      mode === 'fill' ? g.fillText(t, x, y) : g.strokeText(t, x, y);
+      return;
+    }
+    let cx = x;
+    for (const ch of t) {
+      mode === 'fill' ? g.fillText(ch, cx, y) : g.strokeText(ch, cx, y);
+      cx += g.measureText(ch).width + spacing;
+    }
+  }
+
+  function drawTextLayout(g, L, k) {
+    g.save();
+    g.setTransform(k, 0, 0, k, 0, 0);
+    // ブラウザは文字のベースラインをピクセル単位にそろえて描くので、同じように丸める
+    const baseY = Math.round((L.y + L.baseline) * k) / k;
+    g.translate(L.x, baseY);
+    g.scale(L.sx, 1);
+    g.font = L.font;
+    if ('letterSpacing' in g) g.letterSpacing = L.spacing + 'px';
+    g.textAlign = 'left';
+    g.textBaseline = 'alphabetic';
+    const by = 0;
+
+    // 外側の影（ずらした位置に影だけを落とす）
+    const FAR = 4000;
+    for (const [x, y, blur, color] of L.extra.slice().reverse()) {
+      g.save();
+      g.shadowColor = color;
+      g.shadowBlur = blur * k;
+      g.shadowOffsetX = (FAR + x) * k * L.sx;
+      g.shadowOffsetY = y * k;
+      g.fillStyle = '#000';
+      drawString(g, L.text, -FAR, by, L.spacing, 'fill');
+      g.restore();
+    }
+    // 縁取り
+    if (L.width > 0) {
+      g.lineJoin = 'round';
+      g.miterLimit = 2;
+      g.lineWidth = L.width * 2;
+      g.strokeStyle = L.color;
+      drawString(g, L.text, 0, by, L.spacing, 'stroke');
+    }
+    // 文字本体
+    g.fillStyle = L.fill;
+    drawString(g, L.text, 0, by, L.spacing, 'fill');
+    g.restore();
+  }
+
+  async function snapshot(node, opts, { drawOutlinedText = false } = {}) {
     if (!window.htmlToImage) {
       throw Object.assign(new Error('no lib'), { userMessage: '書き出し用のライブラリを読み込めませんでした。ネットワーク接続を確認して、ページを再読み込みしてください。' });
     }
@@ -1207,9 +1302,22 @@
     // Safari（iPhone/iPad のブラウザはすべて Safari と同じ仕組み）は、1回目の書き出しで
     // 画像やフォントが反映されないことがあるため、同じ内容を繰り返し描いて最後の結果を使う
     const passes = IS_WEBKIT ? 3 : 1;
-    let blob;
-    for (let i = 0; i < passes; i++) blob = await window.htmlToImage.toBlob(node, opts);
+    const layouts = drawOutlinedText ? textLayouts() : [];
+    if (layouts.length && document.fonts) {
+      await Promise.all(layouts.map((L) => document.fonts.load(L.font, L.text).catch(() => null)));
+    }
+    let canvas;
+    for (const L of layouts) L.el.style.visibility = 'hidden';
+    try {
+      for (let i = 0; i < passes; i++) canvas = await window.htmlToImage.toCanvas(node, opts);
+    } finally {
+      for (const L of layouts) L.el.style.visibility = '';
+    }
+    const k = opts.pixelRatio || 1;
+    const g = canvas.getContext('2d');
+    for (const L of layouts) drawTextLayout(g, L, k);
 
+    const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
     if (!blob) throw new Error('toBlob failed');
     return { blob, fontsOk };
   }
@@ -1268,7 +1376,7 @@
       pixelRatio: state.exportScale,
       style: { transform: 'none', left: '0', top: '0' },
       filter: (node) => !(node.classList && (node.classList.contains('st-art-empty') || node.hidden))
-    });
+    }, { drawOutlinedText: true });
     let outBlob = blob;
     let ext = 'png';
     if (format === 'webp') {
