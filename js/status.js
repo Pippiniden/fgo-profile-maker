@@ -374,6 +374,9 @@
       const src = $(id);
       if (!src) continue;
       const host = src.parentElement;
+      // 元の文字を常に縁取りレイヤーより前面にする。
+      src.style.position = src.style.position || 'relative';
+      src.style.zIndex = '1';
       if (!host) continue;
 
       host.classList.add('st-outline-host');
