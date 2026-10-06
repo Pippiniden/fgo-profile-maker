@@ -1100,12 +1100,44 @@
     return (base || 'character') + suffix;
   }
 
+  function waitForImageDecode(img) {
+    if (!img || !img.src || img.hidden) return Promise.resolve();
+    if (img.complete && img.naturalWidth > 0) {
+      return typeof img.decode === 'function' ? img.decode().catch(() => {}) : Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        img.removeEventListener('load', finish);
+        img.removeEventListener('error', finish);
+        const p = typeof img.decode === 'function' ? img.decode().catch(() => {}) : Promise.resolve();
+        Promise.resolve(p).then(resolve);
+      };
+      img.addEventListener('load', finish, { once: true });
+      img.addEventListener('error', finish, { once: true });
+      if (img.complete) finish();
+    });
+  }
+
+  async function waitForImages(node) {
+    const imgs = [...node.querySelectorAll('img')].filter((img) => img.src && !img.hidden);
+    if (!imgs.length) return;
+    await Promise.all(imgs.map(waitForImageDecode));
+  }
+
   async function snapshot(node, opts) {
     if (!window.htmlToImage) {
       throw Object.assign(new Error('no lib'), { userMessage: '書き出し用のライブラリを読み込めませんでした。ネットワーク接続を確認して、ページを再読み込みしてください。' });
     }
     render();
+    // 初回書き出し時は、画像要素の src 設定直後だと html-to-image 側の複製が先に走ることがある。
+    // DOM上の画像が実際に decode 済みになるまで待ち、初回だけキャラ画像が消える競合を避ける。
     if (document.fonts) await document.fonts.ready;
+    await waitForImages(node);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await waitForImages(node);
     let fontsOk = true;
     try {
       opts.fontEmbedCSS = await buildFontCss();
