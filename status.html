@@ -12,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+1p:wght@500;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Old+Mincho:wght@400;500;600;700;900&family=Shippori+Mincho+B1:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@400;500;600;700;800;900&family=Kaisei+Tokumin:wght@400;500;700;800&family=Zen+Antique&family=Hina+Mincho&family=Yuji+Syuku&family=Dela+Gothic+One&family=Reggae+One&family=RocknRoll+One&family=Cormorant+Garamond:wght@500;600;700&family=Cinzel:wght@500;600;700;800;900&family=Marcellus&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+1p:wght@500;700;800;900&family=Sawarabi+Gothic&family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&family=Kiwi+Maru:wght@300;400;500&family=Kosugi+Maru&family=RocknRoll+One&family=Zen+Old+Mincho:wght@400;500;600;700;900&family=Shippori+Mincho+B1:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@400;500;600;700;800;900&family=Kaisei+Tokumin:wght@400;500;700;800&family=Sawarabi+Mincho&family=Hina+Mincho&family=Zen+Antique&family=Yuji+Syuku&family=Reggae+One&family=Cormorant+Garamond:wght@500;600;700&family=Cinzel:wght@500;600;700;800;900&family=Marcellus&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Libre+Baskerville:wght@400;700&family=Roboto:wght@400;500;700;900&family=Oswald:wght@400;500;600;700&family=Allura&display=swap">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/status.css">
 </head>
@@ -38,9 +38,9 @@
             <div class="st-bg-shade"></div>
           </div>
 
-          <!-- 左：キャラクターカード -->
+          <!-- 左：キャラクターカード
+               下から「イラスト → 枠（CSS か自作画像）→ 星・クラス名・アイコン」の順に重ねます -->
           <div class="st-card" id="card">
-            <div class="st-frame-ring" aria-hidden="true"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i></div>
             <div class="st-card-inner">
               <div class="st-art" id="art">
                 <div class="st-art-bg" id="artBg"></div>
@@ -49,27 +49,30 @@
                   <span>キャラ画像を<br>ドロップ／選択</span>
                 </div>
               </div>
-              <img class="st-frame-img" id="frameImg" alt="" hidden>
-
-              <div class="st-card-top" aria-hidden="true">
-                <div class="st-crown"><div class="st-stars" id="stars"></div></div>
-              </div>
-              <div class="st-corner tl" aria-hidden="true"><i></i></div>
-              <div class="st-corner tr" aria-hidden="true"><i></i></div>
-
-              <div class="st-card-bottom-edge" aria-hidden="true"></div>
-              <div class="st-card-bottom">
-                <div class="st-spear left" aria-hidden="true"></div>
-                <div class="st-spear right" aria-hidden="true"></div>
-                <div class="st-corner bl" aria-hidden="true"></div>
-                <div class="st-corner br" aria-hidden="true"></div>
-                <div class="st-icon">
-                  <div class="st-icon-frame" aria-hidden="true"></div>
-                  <img class="st-icon-img" id="iconImg" alt="" hidden>
+              <div class="st-cssframe" aria-hidden="true">
+                <div class="st-art-shade"></div>
+                <div class="st-arch"><div class="st-arch-navy"></div></div>
+                <div class="st-band">
+                  <div class="st-band-orn"></div>
+                  <div class="st-spear left"></div>
+                  <div class="st-spear right"></div>
+                  <div class="st-corner bl"></div>
+                  <div class="st-corner br"></div>
                 </div>
+                <div class="st-corner tl"><i></i></div>
+                <div class="st-corner tr"><i></i></div>
+              </div>
+            </div>
+            <div class="st-frame-ring" aria-hidden="true"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><b></b></div>
+            <img class="st-frame-img" id="frameImg" alt="" hidden>
+            <div class="st-card-over">
+              <div class="st-stars" id="stars"></div>
+              <div class="st-icon" id="icon">
+                <div class="st-icon-frame" aria-hidden="true"></div>
+                <img class="st-icon-img" id="iconImg" alt="" hidden>
               </div>
               <div class="st-class-en"><span id="classEn"></span></div>
-              <div class="st-class-ruby" id="classRuby"></div>
+              <div class="st-class-ruby"><span id="classRuby"></span></div>
             </div>
           </div>
 
@@ -120,7 +123,7 @@
     <section class="credits">
       <h2>クレジット</h2>
       <p class="small">
-        フォント：<a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a>（SIL Open Font License）／
+        フォント：<a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a>（SIL Open Font License・Apache License 2.0）／
         PNG書き出し：<a href="https://github.com/bubkoo/html-to-image" target="_blank" rel="noopener">html-to-image</a>（MIT License）
       </p>
       <p class="small">

@@ -7,50 +7,102 @@
   'use strict';
 
   const W = 1280, H = 720;
-  const STORE_KEY = 'fgoStatusMaker.v2';
+  const CARD_RECT = { x: 8, y: 6, w: 424, h: 708 };
+  const STORE_KEY = 'fgoStatusMaker.v3';
 
   const stage = document.getElementById('statusStage');
   const wrap = document.getElementById('stageWrap');
   const $ = (id) => document.getElementById(id);
 
   /* ------------------------------------------------------------------
-   * フォント（すべて Google Fonts / SIL Open Font License）
-   * キャラ紹介メーカーと同じラインナップ＋英字用のセリフ体
+   * フォント（すべて Google Fonts / SIL Open Font License・Apache License）
+   * 種類ごとにまとめて、選択欄でもグループ表示する
    * ------------------------------------------------------------------ */
-  const FONTS = [
-    { family: 'Zen Kaku Gothic New', label: 'Zen角ゴシック New', weights: [400, 500, 700, 900] },
-    { family: 'Noto Sans JP', label: 'Noto Sans JP（ゴシック）', weights: [400, 500, 700, 900] },
-    { family: 'M PLUS 1p', label: 'M PLUS 1p（ゴシック）', weights: [500, 700, 800, 900] },
-    { family: 'Zen Maru Gothic', label: 'Zen丸ゴシック', weights: [500, 700, 900] },
-    { family: 'Zen Old Mincho', label: 'Zen Old Mincho（明朝）', weights: [400, 500, 600, 700, 900] },
-    { family: 'Shippori Mincho B1', label: 'しっぽり明朝 B1', weights: [400, 500, 600, 700, 800] },
-    { family: 'Noto Serif JP', label: 'Noto Serif JP（明朝）', weights: [400, 500, 600, 700, 800, 900] },
-    { family: 'Kaisei Tokumin', label: '解星 特ミン（太明朝）', weights: [400, 500, 700, 800] },
-    { family: 'Zen Antique', label: 'Zen Antique（アンティーク明朝）', weights: [400] },
-    { family: 'Hina Mincho', label: 'ひな明朝', weights: [400] },
-    { family: 'Yuji Syuku', label: '佑字 肅（筆文字）', weights: [400] },
-    { family: 'Dela Gothic One', label: 'デラゴシック（極太）', weights: [400] },
-    { family: 'Reggae One', label: 'Reggae One（ポップ）', weights: [400] },
-    { family: 'RocknRoll One', label: 'RocknRoll One（丸ゴ）', weights: [400] },
-    { family: 'Cormorant Garamond', label: 'Cormorant Garamond（英字のみ・セリフ）', weights: [500, 600, 700] },
-    { family: 'Cinzel', label: 'Cinzel（英字のみ・碑文風）', weights: [500, 600, 700, 800, 900] },
-    { family: 'Marcellus', label: 'Marcellus（英字のみ・細セリフ）', weights: [400] }
+  const FONT_GROUPS = [
+    { group: 'ゴシック', fonts: [
+      { family: 'Zen Kaku Gothic New', label: 'Zen角ゴシック New', weights: [400, 500, 700, 900] },
+      { family: 'Noto Sans JP', label: 'Noto Sans JP', weights: [400, 500, 700, 900] },
+      { family: 'M PLUS 1p', label: 'M PLUS 1p', weights: [500, 700, 800, 900] },
+      { family: 'Sawarabi Gothic', label: 'さわらびゴシック', weights: [400] },
+      { family: 'Dela Gothic One', label: 'デラゴシック（極太）', weights: [400] }
+    ] },
+    { group: '丸ゴシック', fonts: [
+      { family: 'Zen Maru Gothic', label: 'Zen丸ゴシック', weights: [500, 700, 900] },
+      { family: 'Kiwi Maru', label: 'キウイ丸', weights: [300, 400, 500] },
+      { family: 'Kosugi Maru', label: '小杉丸ゴシック', weights: [400] },
+      { family: 'RocknRoll One', label: 'RocknRoll One', weights: [400] }
+    ] },
+    { group: '明朝', fonts: [
+      { family: 'Zen Old Mincho', label: 'Zen Old Mincho', weights: [400, 500, 600, 700, 900] },
+      { family: 'Shippori Mincho B1', label: 'しっぽり明朝 B1', weights: [400, 500, 600, 700, 800] },
+      { family: 'Noto Serif JP', label: 'Noto Serif JP', weights: [400, 500, 600, 700, 800, 900] },
+      { family: 'Kaisei Tokumin', label: '解星 特ミン（太明朝）', weights: [400, 500, 700, 800] },
+      { family: 'Sawarabi Mincho', label: 'さわらび明朝', weights: [400] },
+      { family: 'Hina Mincho', label: 'ひな明朝', weights: [400] },
+      { family: 'Zen Antique', label: 'Zen Antique（アンティーク明朝）', weights: [400] }
+    ] },
+    { group: '筆文字・デザイン', fonts: [
+      { family: 'Yuji Syuku', label: '佑字 肅（筆文字）', weights: [400] },
+      { family: 'Reggae One', label: 'Reggae One（ポップ）', weights: [400] }
+    ] },
+    { group: '英字・セリフ（日本語は標準フォント）', fonts: [
+      { family: 'Cormorant Garamond', label: 'Cormorant Garamond', weights: [500, 600, 700] },
+      { family: 'Cinzel', label: 'Cinzel（碑文風・大文字）', weights: [500, 600, 700, 800, 900] },
+      { family: 'Marcellus', label: 'Marcellus', weights: [400] },
+      { family: 'Lora', label: 'Lora', weights: [400, 500, 600, 700] },
+      { family: 'Playfair Display', label: 'Playfair Display', weights: [400, 500, 600, 700, 800, 900] },
+      { family: 'Libre Baskerville', label: 'Libre Baskerville', weights: [400, 700] }
+    ] },
+    { group: '英字・サンセリフ（日本語は標準フォント）', fonts: [
+      { family: 'Roboto', label: 'Roboto', weights: [400, 500, 700, 900] },
+      { family: 'Oswald', label: 'Oswald（縦長）', weights: [400, 500, 600, 700] }
+    ] },
+    { group: '英字・筆記体（日本語は標準フォント）', fonts: [
+      { family: 'Allura', label: 'Allura', weights: [400] }
+    ] }
   ];
+  const FONTS = FONT_GROUPS.flatMap((g) => g.fonts);
   const FALLBACK_FONT = '"Hiragino Sans", "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", sans-serif';
   const findFont = (fam) => FONTS.find((f) => f.family === fam) || FONTS[0];
   const nearestWeight = (f, w) => f.weights.reduce((a, b) => (Math.abs(b - w) < Math.abs(a - w) ? b : a));
-  const WEIGHT_LABELS = { 400: '標準 (400)', 500: 'ミディアム (500)', 600: 'セミボールド (600)', 700: 'ボールド (700)', 800: 'エクストラボールド (800)', 900: 'ブラック (900)' };
+  const WEIGHT_LABELS = { 300: '細め (300)', 400: '標準 (400)', 500: 'ミディアム (500)', 600: 'セミボールド (600)', 700: 'ボールド (700)', 800: 'エクストラボールド (800)', 900: 'ブラック (900)' };
 
   // フォントを指定する部位
   const FONT_PARTS = [
     ['name', '名前'],
     ['sub', 'クラス名（名前の下）'],
     ['heading', '見出し「プロフィール」'],
-    ['body', '本文・項目名・枠の見出し'],
-    ['rank', 'ランク（A+ など）'],
+    ['tab', '枠の見出し'],
+    ['detail', 'キャラクター詳細の本文'],
+    ['param', 'パラメーターの項目名'],
+    ['rank', 'ランク'],
     ['classEn', 'カードのクラス名（英字）'],
     ['classRuby', 'カードのクラス名の読み']
   ];
+  const partLabel = (p) => (FONT_PARTS.find((x) => x[0] === p) || [p, p])[1];
+
+  /* ------------------------------------------------------------------
+   * 枠の色
+   * ------------------------------------------------------------------ */
+  const PALETTES = {
+    gold:   { hi: '#fffbe6', light: '#fff1b0', mid: '#e0b24a', dark: '#7d4f0e', edge: '#3a2405' },
+    silver: { hi: '#ffffff', light: '#f2f5f8', mid: '#b9c2cc', dark: '#58616c', edge: '#22282f' },
+    bronze: { hi: '#fff1e2', light: '#f3c9a0', mid: '#c4824c', dark: '#5e3416', edge: '#2e1607' }
+  };
+
+  function hexToRgb(hex) {
+    let h = String(hex || '#000').replace('#', '');
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    const n = parseInt(h, 16) || 0;
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function mix(hex, toHex, t) {
+    const a = hexToRgb(hex), b = hexToRgb(toHex);
+    return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  }
+  function paletteFrom(metal) {
+    return { hi: mix(metal, '#ffffff', 0.85), light: mix(metal, '#ffffff', 0.6), mid: metal, dark: mix(metal, '#000000', 0.5), edge: mix(metal, '#000000', 0.78) };
+  }
 
   /* ------------------------------------------------------------------
    * ランク
@@ -73,7 +125,9 @@
       name: { font: ZK, weight: 900 },
       sub: { font: ZK, weight: 900 },
       heading: { font: ZK, weight: 900 },
-      body: { font: ZK, weight: 700 },
+      tab: { font: ZK, weight: 700 },
+      detail: { font: ZK, weight: 700 },
+      param: { font: ZK, weight: 700 },
       rank: { font: ZK, weight: 700 },
       classEn: { font: 'Cormorant Garamond', weight: 700 },
       classRuby: { font: ZK, weight: 700 }
@@ -98,13 +152,27 @@
     card: {
       stars: 5,
       frame: 'auto',
+      metal: '#e0b24a',
+      band: '#173677',
       useCustomFrame: true,
+      pedestal: false,
       classEn: 'Caster',
-      classRuby: 'キャスター',
       classSize: 54,
+      classSpacing: 0,
+      classX: 0,
+      classY: 0,
+      classRuby: 'キャスター',
+      rubySize: 15,
+      rubySpacing: 0,
+      rubyX: 0,
+      rubyY: 0,
+      iconX: 0,
+      iconY: 0,
+      iconScale: 1,
       artTop: '#f2f2f2',
       artBottom: '#b9bcc0'
     },
+    frameImg: { scale: 1, sx: 1, sy: 1, x: 0, y: 0, hue: 0, saturate: 100, brightness: 100, contrast: 100, opacity: 1 },
     art: { x: 0, y: 0, scale: 1 },
     bg: {
       top: '#3a7cc0',
@@ -153,7 +221,7 @@
   const assets = {
     art: null,      // { url, w, h, name }
     icon: null,     // { url, name }
-    frame: null     // { url, name }
+    frame: null     // { url, w, h, name }
   };
 
   /* ------------------------------------------------------------------
@@ -172,7 +240,6 @@
     fontKnown.add(key);
     document.fonts.load(fontCss(part), text).then(() => requestRender(), () => {});
   }
-
   function applyFont(el, part) {
     const f = state.fonts[part];
     el.style.fontFamily = `"${f.font}", ${FALLBACK_FONT}`;
@@ -182,11 +249,14 @@
   /* ------------------------------------------------------------------
    * 描画（DOM に反映）
    * ------------------------------------------------------------------ */
-  function frameClass() {
-    const f = state.card.frame;
-    if (f !== 'auto') return f;
-    const s = state.card.stars;
-    return s >= 4 ? 'gold' : s === 3 ? 'silver' : s >= 1 ? 'bronze' : 'gold';
+  function currentPalette() {
+    let f = state.card.frame;
+    if (f === 'custom') return paletteFrom(state.card.metal);
+    if (f === 'auto') {
+      const s = state.card.stars;
+      f = s >= 4 || s === 0 ? 'gold' : s === 3 ? 'silver' : 'bronze';
+    }
+    return PALETTES[f] || PALETTES.gold;
   }
   const usingCustomFrame = () => !!(assets.frame && state.card.useCustomFrame);
 
@@ -200,6 +270,14 @@
     }
   }
 
+  function setText(id, part, text) {
+    const el = $(id);
+    el.textContent = text;
+    applyFont(el, part);
+    ensureFont(part, text);
+    return el;
+  }
+
   function renderParams() {
     const grid = $('paramGrid');
     grid.innerHTML = '';
@@ -211,9 +289,9 @@
       const rankText = it.rank === '-' ? '－' : it.rank === '?' ? '？' : it.rank;
       const rank = h('div', { class: 'st-param-rank' }, rankText, it.mod ? h('small', { text: it.mod }) : null);
       const label = h('div', { class: 'st-param-label', text: it.label });
-      applyFont(label, 'body');
+      applyFont(label, 'param');
       applyFont(rank, 'rank');
-      ensureFont('body', it.label);
+      ensureFont('param', it.label);
       ensureFont('rank', rankText + it.mod);
       grid.appendChild(h('div', { class: 'st-param' }, label, bar, rank));
     }
@@ -221,7 +299,7 @@
 
   function artBox() {
     const art = $('art');
-    return { w: art.offsetWidth || 410, h: art.offsetHeight || 558 };
+    return { w: art.offsetWidth || 406, h: art.offsetHeight || 584 };
   }
 
   function renderArt() {
@@ -241,12 +319,19 @@
     img.style.transform = `translate(${left}px, ${top}px)`;
   }
 
-  function setText(id, part, text) {
-    const el = $(id);
-    el.textContent = text;
-    applyFont(el, part);
-    ensureFont(part, text);
-    return el;
+  function renderFrameImg(custom) {
+    const img = $('frameImg');
+    img.hidden = !custom;
+    if (!custom) return;
+    if (img.getAttribute('src') !== assets.frame.url) img.src = assets.frame.url;
+    const f = state.frameImg;
+    const w = CARD_RECT.w * f.scale * f.sx;
+    const hh = CARD_RECT.h * f.scale * f.sy;
+    img.style.width = w + 'px';
+    img.style.height = hh + 'px';
+    img.style.transform = `translate(${(CARD_RECT.w - w) / 2 + f.x}px, ${(CARD_RECT.h - hh) / 2 + f.y}px)`;
+    img.style.filter = `hue-rotate(${f.hue}deg) saturate(${f.saturate}%) brightness(${f.brightness}%) contrast(${f.contrast}%)`;
+    img.style.opacity = f.opacity;
   }
 
   function render() {
@@ -259,8 +344,11 @@
     st.setProperty('--art-top', s.card.artTop);
     st.setProperty('--art-bottom', s.card.artBottom);
     st.setProperty('--panel-alpha', s.bg.panelAlpha);
-    stage.classList.remove('frame-gold', 'frame-silver', 'frame-bronze');
-    stage.classList.add('frame-' + frameClass());
+    const pal = currentPalette();
+    for (const k of ['hi', 'light', 'mid', 'dark', 'edge']) st.setProperty('--frame-' + k, pal[k]);
+    st.setProperty('--navy-light', mix(s.card.band, '#ffffff', 0.16));
+    st.setProperty('--navy', s.card.band);
+    st.setProperty('--navy-dark', mix(s.card.band, '#000000', 0.48));
 
     // 名前・クラス名・見出し
     const name = setText('nameText', 'name', s.name.text);
@@ -273,9 +361,9 @@
     fitWidth(sub, 800, '100% 50%');
 
     // パネル
-    setText('detailTab', 'body', s.detail.tab);
-    setText('paramTab', 'body', s.params.tab);
-    const dt = setText('detailText', 'body', s.detail.text);
+    setText('detailTab', 'tab', s.detail.tab);
+    setText('paramTab', 'tab', s.params.tab);
+    const dt = setText('detailText', 'detail', s.detail.text);
     dt.style.fontSize = s.detail.size + 'px';
     dt.style.lineHeight = s.detail.lineHeight + 'px';
     renderParams();
@@ -284,24 +372,35 @@
     const card = $('card');
     const custom = usingCustomFrame();
     card.classList.toggle('custom', custom);
-    const frameImg = $('frameImg');
-    frameImg.hidden = !custom;
-    if (custom && frameImg.getAttribute('src') !== assets.frame.url) frameImg.src = assets.frame.url;
+    card.classList.toggle('no-pedestal', !s.card.pedestal);
+    renderFrameImg(custom);
 
     const stars = $('stars');
     stars.innerHTML = '';
     for (let i = 0; i < s.card.stars; i++) stars.appendChild(h('div', { class: 'st-star' }));
-    stars.parentElement.classList.toggle('empty', s.card.stars === 0);
-    const en = setText('classEn', 'classEn', s.card.classEn);
-    en.parentElement.style.fontSize = s.card.classSize + 'px';
-    fitWidth(en, 396, '50% 100%');
-    setText('classRuby', 'classRuby', s.card.classRuby);
 
+    const c = s.card;
+    const en = setText('classEn', 'classEn', c.classEn);
+    const enBox = en.parentElement;
+    enBox.style.fontSize = c.classSize + 'px';
+    enBox.style.letterSpacing = c.classSpacing + 'em';
+    enBox.style.bottom = (108 - c.classY) + 'px';
+    enBox.style.transform = `translateX(${c.classX}px)`;
+    fitWidth(en, 396, '50% 100%');
+    const ruby = setText('classRuby', 'classRuby', c.classRuby);
+    const rubyBox = ruby.parentElement;
+    rubyBox.style.fontSize = c.rubySize + 'px';
+    rubyBox.style.letterSpacing = c.rubySpacing + 'em';
+    rubyBox.style.bottom = (86 - c.rubyY) + 'px';
+    rubyBox.style.transform = `translateX(${c.rubyX}px)`;
+    fitWidth(ruby, 396, '50% 100%');
+
+    const icon = $('icon');
+    icon.style.transform = `translate(${c.iconX}px, ${c.iconY}px) scale(${c.iconScale})`;
     const iconImg = $('iconImg');
     iconImg.hidden = !assets.icon;
     if (assets.icon && iconImg.getAttribute('src') !== assets.icon.url) iconImg.src = assets.icon.url;
-    iconImg.parentElement.classList.toggle('has-img', !!assets.icon);
-    iconImg.parentElement.hidden = custom && !assets.icon;
+    icon.classList.toggle('has-img', !!assets.icon);
 
     renderArt();
 
@@ -436,18 +535,30 @@
     return h('div', { class: 'row' }, h('label', { for: id, text: label }), sel);
   }
 
+  // 種類ごとにまとめたフォントの選択欄
+  function fontSelectEl(attrs, placeholder) {
+    return h('select', attrs,
+      placeholder ? h('option', { value: '', text: placeholder }) : null,
+      FONT_GROUPS.map((g) => h('optgroup', { label: g.group },
+        g.fonts.map((f) => h('option', { value: f.family, text: f.label })))));
+  }
+
   // フォント＋太さ（太さは選んだフォントにあるものだけ）
-  function fontField(part) {
-    const fontSel = selectField('フォント', ['fonts', part, 'font'], FONTS.map((f) => [f.family, f.label]), {
-      onChange: (v) => {
-        const f = findFont(v);
-        state.fonts[part].font = f.family;
-        state.fonts[part].weight = nearestWeight(f, state.fonts[part].weight);
-      }
+  function fontField(part, label) {
+    const id = 'f' + (++uid);
+    const sel = fontSelectEl({ id });
+    sel.addEventListener('change', () => {
+      const f = findFont(sel.value);
+      state.fonts[part].font = f.family;
+      state.fonts[part].weight = nearestWeight(f, state.fonts[part].weight);
+      changed(); syncUI();
     });
+    binds.push(() => { sel.value = state.fonts[part].font; });
     const weightSel = selectField('太さ', ['fonts', part, 'weight'],
       () => findFont(state.fonts[part].font).weights.map((w) => [w, WEIGHT_LABELS[w] || String(w)]));
-    return h('div', { class: 'grid2' }, fontSel, weightSel);
+    return h('div', { class: 'grid2' },
+      h('div', { class: 'row' }, h('label', { for: id, text: label ? `${label}のフォント` : 'フォント' }), sel),
+      weightSel);
   }
 
   function fileButton(label, onFile) {
@@ -474,28 +585,46 @@
       h('summary', { text: title }), h('div', { class: 'section-body' }, children));
   }
 
+  function resetButton(label, keys) {
+    return h('div', { class: 'btn-row' }, h('button', {
+      type: 'button', class: 'btn small', text: label,
+      onclick: () => {
+        for (const path of keys) {
+          const def = path.reduce((o, k) => o[k], DEFAULTS);
+          setPath(path, clone(def));
+        }
+        changed(); syncUI();
+      }
+    }));
+  }
+
   const status = {};
 
   function buildPanels() {
     const panels = $('panels');
 
-    // 名前・見出し
+    /* ---- 名前・見出し ---- */
     panels.appendChild(section('名前・見出し', [
       block('キャラ名とクラス名', [
         textField('名前（右上の大きな文字）', ['name', 'text']),
         textField('クラス名（名前の下）', ['sub', 'text'], { note: '空欄にすると表示されません。' }),
-        adv('詳細設定：文字サイズ', [
+        adv('詳細設定：フォント・文字サイズ', [
+          fontField('name', '名前'),
           rangeField('名前の文字サイズ', ['name', 'size'], 28, 90, 1, 'px'),
+          fontField('sub', 'クラス名'),
           rangeField('クラス名の文字サイズ', ['sub', 'size'], 12, 40, 1, 'px')
         ])
       ]),
       block('見出し', [
         textField('見出しの文字', ['heading', 'text']),
-        adv('詳細設定：文字サイズ', [rangeField('文字サイズ', ['heading', 'size'], 24, 72, 1, 'px')])
+        adv('詳細設定：フォント・文字サイズ', [
+          fontField('heading'),
+          rangeField('文字サイズ', ['heading', 'size'], 24, 72, 1, 'px')
+        ])
       ])
     ], true));
 
-    // カード
+    /* ---- キャラクターカード ---- */
     const [artBtn, artInput] = fileButton('画像を選ぶ', loadArtFile);
     status.artName = h('span', { class: 'file-name' });
     const [iconBtn, iconInput] = fileButton('アイコン画像を選ぶ', loadIconFile);
@@ -510,8 +639,26 @@
       type: 'button', class: 'btn small ghost', text: '外す',
       onclick: () => { if (assets.frame) URL.revokeObjectURL(assets.frame.url); assets.frame = null; updateStatus(); requestRender(); }
     });
-    status.frameToggle = checkField('自作の枠画像を使う', ['card', 'useCustomFrame']);
-    const frameTemplateBtn = h('button', { type: 'button', class: 'btn small', text: '今の枠を下絵用に保存', onclick: exportFrameTemplate });
+    status.frameOpts = h('div', { class: 'adv-body' }, [
+      checkField('自作の枠画像を使う（外すとCSSの枠に戻ります）', ['card', 'useCustomFrame']),
+      checkField('アイコンの台座（菱形の枠）も表示する', ['card', 'pedestal']),
+      rangeField('拡大率', ['frameImg', 'scale'], 0.5, 2, 0.01, '倍'),
+      h('div', { class: 'grid2' },
+        rangeField('横の比率', ['frameImg', 'sx'], 0.5, 2, 0.01, '倍'),
+        rangeField('縦の比率', ['frameImg', 'sy'], 0.5, 2, 0.01, '倍')),
+      h('div', { class: 'grid2' },
+        rangeField('左右の位置', ['frameImg', 'x'], -200, 200, 1, 'px'),
+        rangeField('上下の位置', ['frameImg', 'y'], -200, 200, 1, 'px')),
+      rangeField('色相（色味を回す）', ['frameImg', 'hue'], -180, 180, 1, '°'),
+      h('div', { class: 'grid2' },
+        rangeField('彩度', ['frameImg', 'saturate'], 0, 300, 1, '%'),
+        rangeField('明るさ', ['frameImg', 'brightness'], 20, 200, 1, '%')),
+      h('div', { class: 'grid2' },
+        rangeField('コントラスト', ['frameImg', 'contrast'], 20, 200, 1, '%'),
+        rangeField('不透明度', ['frameImg', 'opacity'], 0, 1, 0.01, '')),
+      resetButton('枠画像の調整を戻す', [['frameImg']])
+    ]);
+    const frameTemplateBtn = h('button', { type: 'button', class: 'btn small', text: '今のCSS枠を下絵用に保存', onclick: exportFrameTemplate });
 
     panels.appendChild(section('キャラクターカード', [
       block('キャラ画像', [
@@ -521,27 +668,26 @@
         h('div', { class: 'grid2' },
           rangeField('左右の位置', ['art', 'x'], -600, 600, 1, 'px'),
           rangeField('上下の位置', ['art', 'y'], -800, 800, 1, 'px')),
-        h('div', { class: 'btn-row' }, h('button', {
-          type: 'button', class: 'btn small', text: '位置と拡大率を戻す',
-          onclick: () => { state.art = clone(DEFAULTS.art); changed(); syncUI(); }
-        })),
+        resetButton('位置と拡大率を戻す', [['art']]),
         adv('詳細設定：画像の後ろの背景色', [
           colorField('上側の色', ['card', 'artTop']),
           colorField('下側の色', ['card', 'artBottom'])
         ])
       ]),
-      block('カードの枠', [
+      block('カードの枠（CSSで自動生成）', [
         h('div', { class: 'grid2' },
           selectField('星の数', ['card', 'stars'], [[5, '★5'], [4, '★4'], [3, '★3'], [2, '★2'], [1, '★1'], [0, 'なし']]),
-          selectField('枠の色', ['card', 'frame'], [['auto', '星の数に合わせる'], ['gold', '金'], ['silver', '銀'], ['bronze', '銅']])),
-        adv('自作の枠画像を使う', [
-          h('div', { class: 'btn-row' }, frameBtn, frameInput, status.frameClear, status.frameName),
-          status.frameToggle,
-          h('div', { class: 'note', text: 'カード部分（424×708、高画質なら848×1416）に引き伸ばして、キャラ画像の上に重ねます。イラストを見せたい部分は透明にした PNG を使ってください。' }),
-          h('div', { class: 'note', text: '星・クラス名・アイコンは枠画像の上に表示されます。不要なら星を「なし」、クラス名を空欄にしてください。' }),
-          h('div', { class: 'btn-row' }, frameTemplateBtn),
-          h('div', { class: 'note', text: '今のCSSの枠を透過PNG（848×1416）で保存します。お絵描きソフトで加工する下絵にどうぞ。' })
-        ])
+          selectField('枠の色', ['card', 'frame'], [['auto', '星の数に合わせる'], ['gold', '金'], ['silver', '銀'], ['bronze', '銅'], ['custom', '好きな色']])),
+        h('div', { class: 'grid2' },
+          colorField('金属の色（好きな色のとき）', ['card', 'metal']),
+          colorField('帯の色', ['card', 'band'])),
+        h('div', { class: 'btn-row' }, frameTemplateBtn),
+        h('div', { class: 'note', text: '今のCSS枠を、イラスト部分が透明なPNG（848×1416）で保存します。自作枠の下絵にどうぞ。' })
+      ]),
+      block('カードの枠（自作の画像）', [
+        h('div', { class: 'btn-row' }, frameBtn, frameInput, status.frameClear, status.frameName),
+        h('div', { class: 'note', text: 'カード（424×708、高画質なら848×1416）に合わせて、キャラ画像の上に重ねます。イラストを見せたい部分は透明にした PNG を使ってください。星・クラス名・アイコンは枠画像の上に表示されます。' }),
+        status.frameOpts
       ]),
       block('クラス表記（カード下部）', [
         textField('クラス名（英字）', ['card', 'classEn']),
@@ -549,13 +695,35 @@
         h('div', { class: 'row' }, h('span', { class: 'label', text: 'クラスアイコン' }),
           h('div', { class: 'btn-row' }, iconBtn, iconInput, status.iconClear, status.iconName),
           h('div', { class: 'note', text: '同梱していません。ご自身で用意した画像（透過PNG推奨）を使ってください。' })),
-        adv('詳細設定：文字サイズ', [
-          rangeField('英字の文字サイズ', ['card', 'classSize'], 24, 80, 1, 'px')
+        adv('詳細設定：クラス名（英字）', [
+          fontField('classEn'),
+          rangeField('文字サイズ', ['card', 'classSize'], 20, 90, 1, 'px'),
+          rangeField('文字の間隔', ['card', 'classSpacing'], -0.1, 0.5, 0.01, 'em'),
+          h('div', { class: 'grid2' },
+            rangeField('左右の位置', ['card', 'classX'], -200, 200, 1, 'px'),
+            rangeField('上下の位置', ['card', 'classY'], -300, 120, 1, 'px')),
+          resetButton('位置とサイズを戻す', [['card', 'classSize'], ['card', 'classSpacing'], ['card', 'classX'], ['card', 'classY']])
+        ]),
+        adv('詳細設定：クラス名の読み', [
+          fontField('classRuby'),
+          rangeField('文字サイズ', ['card', 'rubySize'], 8, 40, 1, 'px'),
+          rangeField('文字の間隔', ['card', 'rubySpacing'], -0.1, 0.5, 0.01, 'em'),
+          h('div', { class: 'grid2' },
+            rangeField('左右の位置', ['card', 'rubyX'], -200, 200, 1, 'px'),
+            rangeField('上下の位置', ['card', 'rubyY'], -300, 120, 1, 'px')),
+          resetButton('位置とサイズを戻す', [['card', 'rubySize'], ['card', 'rubySpacing'], ['card', 'rubyX'], ['card', 'rubyY']])
+        ]),
+        adv('詳細設定：クラスアイコン', [
+          rangeField('大きさ', ['card', 'iconScale'], 0.4, 2, 0.01, '倍'),
+          h('div', { class: 'grid2' },
+            rangeField('左右の位置', ['card', 'iconX'], -200, 200, 1, 'px'),
+            rangeField('上下の位置', ['card', 'iconY'], -300, 60, 1, 'px')),
+          resetButton('位置と大きさを戻す', [['card', 'iconScale'], ['card', 'iconX'], ['card', 'iconY']])
         ])
       ])
     ], true));
 
-    // キャラクター詳細
+    /* ---- キャラクター詳細 ---- */
     const warn = h('div', { class: 'warn', text: '文章が枠からはみ出しています。行数を減らすか、文字サイズを小さくしてください。' });
     warn.hidden = true;
     warnEls.push(warn);
@@ -563,14 +731,16 @@
       block('本文', [
         textField('枠の見出し', ['detail', 'tab']),
         textField('本文', ['detail', 'text'], { multiline: true, rows: 7, note: '改行はそのまま反映されます。初期設定で6行まで入ります。', warn }),
-        adv('詳細設定：文字サイズ・行間', [
+        adv('詳細設定：フォント・文字サイズ・行間', [
+          fontField('detail', '本文'),
           rangeField('文字サイズ', ['detail', 'size'], 16, 40, 1, 'px'),
-          rangeField('行の間隔', ['detail', 'lineHeight'], 20, 60, 1, 'px')
+          rangeField('行の間隔', ['detail', 'lineHeight'], 20, 60, 1, 'px'),
+          fontField('tab', '枠の見出し（2か所共通）')
         ])
       ])
     ], true));
 
-    // パラメーター
+    /* ---- パラメーター ---- */
     const rows = state.params.items.map((_, i) => h('div', { class: 'param-row' },
       textField(`項目 ${i + 1}`, ['params', 'items', i, 'label']),
       selectField('ランク', ['params', 'items', i, 'rank'], RANKS),
@@ -579,33 +749,50 @@
       block('ステータス', [
         textField('枠の見出し', ['params', 'tab']),
         h('div', { class: 'note', text: '左上から「左→右」の順に並びます。ゲージはランクに合わせて自動で伸びます（EXは金色）。' }),
-        rows
+        rows,
+        adv('詳細設定：フォント', [
+          fontField('param', '項目名'),
+          fontField('rank', 'ランク')
+        ])
       ])
     ], true));
 
-    // フォント
-    const bulk = h('select', { 'aria-label': 'すべての文字のフォント' },
-      h('option', { value: '', text: '選ぶとまとめて変更…' }),
-      FONTS.filter((f) => !/英字のみ/.test(f.label)).map((f) => h('option', { value: f.family, text: f.label })));
-    bulk.addEventListener('change', () => {
-      const f = findFont(bulk.value);
-      if (!bulk.value) return;
-      for (const [part] of FONT_PARTS) {
-        if (part === 'classEn') continue;
-        state.fonts[part].font = f.family;
-        state.fonts[part].weight = nearestWeight(f, DEFAULTS.fonts[part].weight);
-      }
-      bulk.value = '';
-      changed(); syncUI();
+    /* ---- フォント一括変更 ---- */
+    const bulkSel = fontSelectEl({ 'aria-label': '一括変更するフォント' }, '選んでください');
+    const bulkChecks = FONT_PARTS.map(([part, label]) => {
+      const id = 'f' + (++uid);
+      const input = h('input', { type: 'checkbox', id, value: part });
+      input.checked = part !== 'classEn';
+      return { part, input, el: h('div', { class: 'row check' }, input, h('label', { for: id, text: label })) };
     });
-    panels.appendChild(section('フォント', [
-      h('div', { class: 'note', text: 'キャラ紹介メーカーと同じ Google Fonts を使えます。「英字のみ」のフォントは日本語部分が標準のゴシック体になります。' }),
-      block('まとめて変更', [h('div', { class: 'row' }, bulk),
-        h('div', { class: 'note', text: 'カードのクラス名（英字）以外を一括で変更します。' })]),
-      FONT_PARTS.map(([part, label]) => block(label, [fontField(part)]))
+    const bulkMsg = h('div', { class: 'note', 'aria-live': 'polite' });
+    const applyBtn = h('button', {
+      type: 'button', class: 'btn primary', text: '適用',
+      onclick: () => {
+        if (!bulkSel.value) { bulkMsg.textContent = '先にフォントを選んでください。'; return; }
+        const f = findFont(bulkSel.value);
+        const targets = bulkChecks.filter((c) => c.input.checked).map((c) => c.part);
+        for (const part of targets) {
+          state.fonts[part].font = f.family;
+          state.fonts[part].weight = nearestWeight(f, DEFAULTS.fonts[part].weight);
+        }
+        bulkMsg.textContent = targets.length
+          ? `「${f.label}」を ${targets.map(partLabel).join('・')} に適用しました。`
+          : '適用する場所にチェックを入れてください。';
+        changed(); syncUI();
+      }
+    });
+    panels.appendChild(section('フォントの一括変更', [
+      h('div', { class: 'note', text: '選んだフォントを、チェックした場所にまとめて適用します。個別のフォントは各項目の「詳細設定」で変更できます。' }),
+      block('一括変更', [
+        h('div', { class: 'row' }, bulkSel),
+        h('div', { class: 'grid2' }, bulkChecks.map((c) => c.el)),
+        h('div', { class: 'btn-row' }, applyBtn),
+        bulkMsg
+      ])
     ], false));
 
-    // 背景・書き出し
+    /* ---- 背景・書き出し ---- */
     panels.appendChild(section('背景・書き出し', [
       block('背景', [
         colorField('上側の色', ['bg', 'top']),
@@ -627,7 +814,7 @@
     status.iconClear.hidden = !assets.icon;
     status.frameName.textContent = assets.frame ? `読み込み済み：${assets.frame.name}` : '未選択（CSSの枠を使用中）';
     status.frameClear.hidden = !assets.frame;
-    status.frameToggle.hidden = !assets.frame;
+    status.frameOpts.hidden = !assets.frame;
     syncUI();
   }
 
@@ -696,7 +883,7 @@
     try {
       const r = await fileToUrl(file, 1800);
       if (assets.frame) URL.revokeObjectURL(assets.frame.url);
-      assets.frame = { url: r.url, name: file.name || '画像' };
+      assets.frame = { ...r, name: file.name || '画像' };
       state.card.useCustomFrame = true;
       updateStatus();
       changed();
@@ -960,7 +1147,6 @@
 
   // 今のCSS枠を、イラスト部分を透明にした PNG で保存（自作枠の下絵用）
   // 画面全体を枠だけ残して書き出し、カードの範囲を切り出す
-  const CARD_RECT = { x: 8, y: 6, w: 424, h: 708 };
   async function exportFrameTemplate(e) {
     const btn = e.currentTarget;
     const card = $('card');
@@ -970,7 +1156,8 @@
       render();
       card.classList.add('template');
       try {
-        const hideCls = ['st-bg', 'st-glow-line', 'st-title', 'st-heading', 'st-panel', 'st-art', 'st-class-en', 'st-class-ruby', 'st-icon-img', 'st-stars'];
+        const hideCls = ['st-bg', 'st-glow-line', 'st-title', 'st-heading', 'st-panel', 'st-art',
+          'st-class-en', 'st-class-ruby', 'st-icon-img', 'st-stars', 'st-frame-img'];
         const k = 2;
         const { blob, fontsOk } = await snapshot(stage, {
           width: W,
