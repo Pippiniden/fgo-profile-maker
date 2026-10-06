@@ -12,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+1p:wght@500;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Old+Mincho:wght@500;700;900&family=Dela+Gothic+One&family=Cormorant+Garamond:wght@600;700&family=Cinzel:wght@600;700&family=Marcellus&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+1p:wght@500;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Old+Mincho:wght@400;500;600;700;900&family=Shippori+Mincho+B1:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@400;500;600;700;800;900&family=Kaisei+Tokumin:wght@400;500;700;800&family=Zen+Antique&family=Hina+Mincho&family=Yuji+Syuku&family=Dela+Gothic+One&family=Reggae+One&family=RocknRoll+One&family=Cormorant+Garamond:wght@500;600;700&family=Cinzel:wght@500;600;700;800;900&family=Marcellus&display=swap">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/status.css">
 </head>
@@ -40,6 +40,7 @@
 
           <!-- 左：キャラクターカード -->
           <div class="st-card" id="card">
+            <div class="st-frame-ring" aria-hidden="true"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i></div>
             <div class="st-card-inner">
               <div class="st-art" id="art">
                 <div class="st-art-bg" id="artBg"></div>
@@ -48,6 +49,7 @@
                   <span>キャラ画像を<br>ドロップ／選択</span>
                 </div>
               </div>
+              <img class="st-frame-img" id="frameImg" alt="" hidden>
 
               <div class="st-card-top" aria-hidden="true">
                 <div class="st-crown"><div class="st-stars" id="stars"></div></div>
@@ -55,6 +57,7 @@
               <div class="st-corner tl" aria-hidden="true"><i></i></div>
               <div class="st-corner tr" aria-hidden="true"><i></i></div>
 
+              <div class="st-card-bottom-edge" aria-hidden="true"></div>
               <div class="st-card-bottom">
                 <div class="st-spear left" aria-hidden="true"></div>
                 <div class="st-spear right" aria-hidden="true"></div>
@@ -65,16 +68,17 @@
                   <img class="st-icon-img" id="iconImg" alt="" hidden>
                 </div>
               </div>
-              <div class="st-class-en" id="classEn"></div>
+              <div class="st-class-en"><span id="classEn"></span></div>
               <div class="st-class-ruby" id="classRuby"></div>
             </div>
           </div>
-          <div class="st-chevron" aria-hidden="true"></div>
 
           <!-- 右：プロフィール -->
           <div class="st-glow-line" aria-hidden="true"></div>
-          <div class="st-name" id="nameText"></div>
-          <div class="st-subname" id="subText"></div>
+          <div class="st-title">
+            <div class="st-name"><span id="nameText"></span></div>
+            <div class="st-subname"><span id="subText"></span></div>
+          </div>
           <div class="st-heading" id="headText"></div>
 
           <section class="st-panel st-detail" id="detailPanel">
@@ -136,6 +140,7 @@
       <h2 id="exportTitle">画像ができました</h2>
       <img id="exportImg" alt="作成した画像">
       <p class="small">うまく保存できないときは、画像を長押し（PCは右クリック）して保存してください。</p>
+      <p class="warn" id="exportNote" hidden>フォントを取得できなかったため、お使いの端末のフォントで書き出しました。通信環境を確認してもう一度お試しください。</p>
       <div class="modal-actions">
         <a class="btn primary" id="downloadLink" download="status.png">ダウンロード</a>
         <button type="button" class="btn" id="closeModalBtn">閉じる</button>

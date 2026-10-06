@@ -7,7 +7,7 @@
   'use strict';
 
   const W = 1280, H = 720;
-  const STORE_KEY = 'fgoStatusMaker.v1';
+  const STORE_KEY = 'fgoStatusMaker.v2';
 
   const stage = document.getElementById('statusStage');
   const wrap = document.getElementById('stageWrap');
@@ -15,24 +15,42 @@
 
   /* ------------------------------------------------------------------
    * フォント（すべて Google Fonts / SIL Open Font License）
-   * heavy … 名前・見出し用の太さ / bold … 本文・項目名用の太さ
+   * キャラ紹介メーカーと同じラインナップ＋英字用のセリフ体
    * ------------------------------------------------------------------ */
-  const JP_FONTS = [
-    { family: 'Zen Kaku Gothic New', label: 'Zen角ゴシック New', heavy: 900, bold: 700 },
-    { family: 'Noto Sans JP', label: 'Noto Sans JP（ゴシック）', heavy: 900, bold: 700 },
-    { family: 'M PLUS 1p', label: 'M PLUS 1p（ゴシック）', heavy: 900, bold: 700 },
-    { family: 'Zen Maru Gothic', label: 'Zen丸ゴシック', heavy: 900, bold: 700 },
-    { family: 'Shippori Mincho B1', label: 'しっぽり明朝 B1', heavy: 800, bold: 700 },
-    { family: 'Zen Old Mincho', label: 'Zen Old Mincho（明朝）', heavy: 900, bold: 700 },
-    { family: 'Dela Gothic One', label: 'デラゴシック（極太）', heavy: 400, bold: 400 }
+  const FONTS = [
+    { family: 'Zen Kaku Gothic New', label: 'Zen角ゴシック New', weights: [400, 500, 700, 900] },
+    { family: 'Noto Sans JP', label: 'Noto Sans JP（ゴシック）', weights: [400, 500, 700, 900] },
+    { family: 'M PLUS 1p', label: 'M PLUS 1p（ゴシック）', weights: [500, 700, 800, 900] },
+    { family: 'Zen Maru Gothic', label: 'Zen丸ゴシック', weights: [500, 700, 900] },
+    { family: 'Zen Old Mincho', label: 'Zen Old Mincho（明朝）', weights: [400, 500, 600, 700, 900] },
+    { family: 'Shippori Mincho B1', label: 'しっぽり明朝 B1', weights: [400, 500, 600, 700, 800] },
+    { family: 'Noto Serif JP', label: 'Noto Serif JP（明朝）', weights: [400, 500, 600, 700, 800, 900] },
+    { family: 'Kaisei Tokumin', label: '解星 特ミン（太明朝）', weights: [400, 500, 700, 800] },
+    { family: 'Zen Antique', label: 'Zen Antique（アンティーク明朝）', weights: [400] },
+    { family: 'Hina Mincho', label: 'ひな明朝', weights: [400] },
+    { family: 'Yuji Syuku', label: '佑字 肅（筆文字）', weights: [400] },
+    { family: 'Dela Gothic One', label: 'デラゴシック（極太）', weights: [400] },
+    { family: 'Reggae One', label: 'Reggae One（ポップ）', weights: [400] },
+    { family: 'RocknRoll One', label: 'RocknRoll One（丸ゴ）', weights: [400] },
+    { family: 'Cormorant Garamond', label: 'Cormorant Garamond（英字のみ・セリフ）', weights: [500, 600, 700] },
+    { family: 'Cinzel', label: 'Cinzel（英字のみ・碑文風）', weights: [500, 600, 700, 800, 900] },
+    { family: 'Marcellus', label: 'Marcellus（英字のみ・細セリフ）', weights: [400] }
   ];
-  const CLASS_FONTS = [
-    { family: 'Cormorant Garamond', label: 'Cormorant Garamond（セリフ）', heavy: 700, bold: 700 },
-    { family: 'Cinzel', label: 'Cinzel（碑文風・大文字）', heavy: 700, bold: 700 },
-    { family: 'Marcellus', label: 'Marcellus（細めのセリフ）', heavy: 400, bold: 400 },
-    ...JP_FONTS
+  const FALLBACK_FONT = '"Hiragino Sans", "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", sans-serif';
+  const findFont = (fam) => FONTS.find((f) => f.family === fam) || FONTS[0];
+  const nearestWeight = (f, w) => f.weights.reduce((a, b) => (Math.abs(b - w) < Math.abs(a - w) ? b : a));
+  const WEIGHT_LABELS = { 400: '標準 (400)', 500: 'ミディアム (500)', 600: 'セミボールド (600)', 700: 'ボールド (700)', 800: 'エクストラボールド (800)', 900: 'ブラック (900)' };
+
+  // フォントを指定する部位
+  const FONT_PARTS = [
+    ['name', '名前'],
+    ['sub', 'クラス名（名前の下）'],
+    ['heading', '見出し「プロフィール」'],
+    ['body', '本文・項目名・枠の見出し'],
+    ['rank', 'ランク（A+ など）'],
+    ['classEn', 'カードのクラス名（英字）'],
+    ['classRuby', 'カードのクラス名の読み']
   ];
-  const findFont = (list, fam) => list.find((f) => f.family === fam) || list[0];
 
   /* ------------------------------------------------------------------
    * ランク
@@ -46,12 +64,20 @@
   /* ------------------------------------------------------------------
    * 初期値（サンプルはオリジナルキャラクター）
    * ------------------------------------------------------------------ */
+  const ZK = 'Zen Kaku Gothic New';
   const DEFAULTS = {
-    name: { text: 'ミラ・アステリア', size: 60 },
-    sub: { text: 'キャスター', size: 19 },
+    name: { text: 'アステリア', size: 58 },
+    sub: { text: 'キャスター', size: 22 },
     heading: { text: 'プロフィール', size: 48 },
-    nameFont: 'Zen Kaku Gothic New',
-    bodyFont: 'Zen Kaku Gothic New',
+    fonts: {
+      name: { font: ZK, weight: 900 },
+      sub: { font: ZK, weight: 900 },
+      heading: { font: ZK, weight: 900 },
+      body: { font: ZK, weight: 700 },
+      rank: { font: ZK, weight: 700 },
+      classEn: { font: 'Cormorant Garamond', weight: 700 },
+      classRuby: { font: ZK, weight: 700 }
+    },
     detail: {
       tab: 'キャラクター詳細',
       text: '星の巡りを読み解く、辺境の天文魔術師。\n幼い頃に見た流星の行方を追い続け、\nやがて「星の書」と呼ばれる魔導書を手にした。\n穏やかで人当たりは良いが、\n夜空の話になると止まらなくなる一面も。\nその瞳には、まだ誰も知らない星図が映っている。',
@@ -72,9 +98,9 @@
     card: {
       stars: 5,
       frame: 'auto',
+      useCustomFrame: true,
       classEn: 'Caster',
       classRuby: 'キャスター',
-      classFont: 'Cormorant Garamond',
       classSize: 54,
       artTop: '#f2f2f2',
       artBottom: '#b9bcc0'
@@ -126,26 +152,48 @@
 
   const assets = {
     art: null,      // { url, w, h, name }
-    icon: null      // { url, name }
+    icon: null,     // { url, name }
+    frame: null     // { url, name }
   };
+
+  /* ------------------------------------------------------------------
+   * フォント読み込み（プレビュー用）
+   * 読み込みが終わったら文字幅が変わるので再描画する
+   * ------------------------------------------------------------------ */
+  const fontKnown = new Set();
+  function fontCss(part, size = 40) {
+    const f = state.fonts[part];
+    return `${f.weight} ${size}px "${f.font}"`;
+  }
+  function ensureFont(part, text) {
+    if (!document.fonts || !text) return;
+    const key = fontCss(part) + '\u0000' + text;
+    if (fontKnown.has(key)) return;
+    fontKnown.add(key);
+    document.fonts.load(fontCss(part), text).then(() => requestRender(), () => {});
+  }
+
+  function applyFont(el, part) {
+    const f = state.fonts[part];
+    el.style.fontFamily = `"${f.font}", ${FALLBACK_FONT}`;
+    el.style.fontWeight = f.weight;
+  }
 
   /* ------------------------------------------------------------------
    * 描画（DOM に反映）
    * ------------------------------------------------------------------ */
-  const ART_W = 424 - 14;              // カード内側の幅
-  const ART_H = 708 - 14 - 30 - 106;   // 上帯と下帯を除いた高さ
-
   function frameClass() {
     const f = state.card.frame;
     if (f !== 'auto') return f;
     const s = state.card.stars;
     return s >= 4 ? 'gold' : s === 3 ? 'silver' : s >= 1 ? 'bronze' : 'gold';
   }
+  const usingCustomFrame = () => !!(assets.frame && state.card.useCustomFrame);
 
   // はみ出す1行テキストは横方向に縮めて収める
   function fitWidth(el, maxW, origin) {
     el.style.transform = '';
-    const w = el.scrollWidth;
+    const w = el.offsetWidth;
     if (w > maxW) {
       el.style.transformOrigin = origin;
       el.style.transform = `scaleX(${(maxW / w).toFixed(4)})`;
@@ -162,8 +210,18 @@
           [0, 1, 2, 3, 4].map((i) => h('div', { class: 'st-seg' + (i < fill ? ' on' : '') }))));
       const rankText = it.rank === '-' ? '－' : it.rank === '?' ? '？' : it.rank;
       const rank = h('div', { class: 'st-param-rank' }, rankText, it.mod ? h('small', { text: it.mod }) : null);
-      grid.appendChild(h('div', { class: 'st-param' }, h('div', { class: 'st-param-label', text: it.label }), bar, rank));
+      const label = h('div', { class: 'st-param-label', text: it.label });
+      applyFont(label, 'body');
+      applyFont(rank, 'rank');
+      ensureFont('body', it.label);
+      ensureFont('rank', rankText + it.mod);
+      grid.appendChild(h('div', { class: 'st-param' }, label, bar, rank));
     }
+  }
+
+  function artBox() {
+    const art = $('art');
+    return { w: art.offsetWidth || 410, h: art.offsetHeight || 558 };
   }
 
   function renderArt() {
@@ -172,26 +230,29 @@
     $('artEmpty').hidden = !!a;
     img.hidden = !a;
     if (!a) return;
-    const base = Math.max(ART_W / a.w, ART_H / a.h);
+    const box = artBox();
+    const base = Math.max(box.w / a.w, box.h / a.h);
     const w = a.w * base * state.art.scale;
     const hh = a.h * base * state.art.scale;
-    const left = (ART_W - w) / 2 + state.art.x;
-    const top = (ART_H - hh) / 2 + state.art.y;
+    const left = (box.w - w) / 2 + state.art.x;
+    const top = (box.h - hh) / 2 + state.art.y;
     img.style.width = w + 'px';
     img.style.height = hh + 'px';
     img.style.transform = `translate(${left}px, ${top}px)`;
   }
 
+  function setText(id, part, text) {
+    const el = $(id);
+    el.textContent = text;
+    applyFont(el, part);
+    ensureFont(part, text);
+    return el;
+  }
+
   function render() {
     const s = state;
     const st = stage.style;
-    const nf = findFont(JP_FONTS, s.nameFont);
-    const bf = findFont(JP_FONTS, s.bodyFont);
-    const cf = findFont(CLASS_FONTS, s.card.classFont);
 
-    st.setProperty('--name-font', `"${nf.family}"`);
-    st.setProperty('--body-font', `"${bf.family}"`);
-    st.setProperty('--class-font', `"${cf.family}"`);
     st.setProperty('--bg-top', s.bg.top);
     st.setProperty('--bg-mid', s.bg.mid);
     st.setProperty('--bg-bottom', s.bg.bottom);
@@ -201,51 +262,46 @@
     stage.classList.remove('frame-gold', 'frame-silver', 'frame-bronze');
     stage.classList.add('frame-' + frameClass());
 
-    // 名前・見出し
-    const name = $('nameText'), sub = $('subText'), head = $('headText');
-    name.textContent = s.name.text;
-    name.style.fontSize = s.name.size + 'px';
-    name.style.fontWeight = nf.heavy;
-    sub.textContent = s.sub.text;
-    sub.style.fontSize = s.sub.size + 'px';
-    sub.style.fontWeight = nf.bold;
-    sub.style.top = Math.round(2 + s.name.size * 1.13) + 'px';
-    head.textContent = s.heading.text;
+    // 名前・クラス名・見出し
+    const name = setText('nameText', 'name', s.name.text);
+    name.parentElement.style.fontSize = s.name.size + 'px';
+    const sub = setText('subText', 'sub', s.sub.text);
+    sub.parentElement.style.fontSize = s.sub.size + 'px';
+    const head = setText('headText', 'heading', s.heading.text);
     head.style.fontSize = s.heading.size + 'px';
-    head.style.fontWeight = nf.heavy;
-    fitWidth(name, 820, '100% 50%');
-    fitWidth(sub, 820, '100% 50%');
+    fitWidth(name, 800, '100% 50%');
+    fitWidth(sub, 800, '100% 50%');
 
     // パネル
-    $('detailTab').textContent = s.detail.tab;
-    $('paramTab').textContent = s.params.tab;
-    for (const t of [$('detailTab'), $('paramTab')]) t.style.fontWeight = bf.bold;
-    const dt = $('detailText');
-    dt.textContent = s.detail.text;
+    setText('detailTab', 'body', s.detail.tab);
+    setText('paramTab', 'body', s.params.tab);
+    const dt = setText('detailText', 'body', s.detail.text);
     dt.style.fontSize = s.detail.size + 'px';
     dt.style.lineHeight = s.detail.lineHeight + 'px';
-    dt.style.fontWeight = bf.bold;
     renderParams();
-    stage.querySelectorAll('.st-param-label').forEach((e) => { e.style.fontWeight = bf.bold; });
-    stage.querySelectorAll('.st-param-rank').forEach((e) => { e.style.fontWeight = nf.bold; });
 
     // カード
+    const card = $('card');
+    const custom = usingCustomFrame();
+    card.classList.toggle('custom', custom);
+    const frameImg = $('frameImg');
+    frameImg.hidden = !custom;
+    if (custom && frameImg.getAttribute('src') !== assets.frame.url) frameImg.src = assets.frame.url;
+
     const stars = $('stars');
     stars.innerHTML = '';
     for (let i = 0; i < s.card.stars; i++) stars.appendChild(h('div', { class: 'st-star' }));
     stars.parentElement.classList.toggle('empty', s.card.stars === 0);
-    const en = $('classEn');
-    en.textContent = s.card.classEn;
-    en.style.fontSize = s.card.classSize + 'px';
-    en.style.fontWeight = cf.heavy;
+    const en = setText('classEn', 'classEn', s.card.classEn);
+    en.parentElement.style.fontSize = s.card.classSize + 'px';
     fitWidth(en, 396, '50% 100%');
-    $('classRuby').textContent = s.card.classRuby;
-    $('classRuby').style.fontWeight = bf.bold;
+    setText('classRuby', 'classRuby', s.card.classRuby);
 
     const iconImg = $('iconImg');
     iconImg.hidden = !assets.icon;
-    if (assets.icon) iconImg.src = assets.icon.url;
+    if (assets.icon && iconImg.getAttribute('src') !== assets.icon.url) iconImg.src = assets.icon.url;
     iconImg.parentElement.classList.toggle('has-img', !!assets.icon);
+    iconImg.parentElement.hidden = custom && !assets.icon;
 
     renderArt();
 
@@ -354,7 +410,7 @@
   function checkField(label, path) {
     const id = 'f' + (++uid);
     const input = h('input', { type: 'checkbox', id });
-    input.addEventListener('change', () => { setPath(path, input.checked); changed(); });
+    input.addEventListener('change', () => { setPath(path, input.checked); changed(); syncUI(); });
     binds.push(() => { input.checked = !!getPath(path); });
     return h('div', { class: 'row check' }, input, h('label', { for: id, text: label }));
   }
@@ -362,14 +418,36 @@
   function selectField(label, path, options, opts = {}) {
     const id = 'f' + (++uid);
     const sel = h('select', { id, 'aria-label': label });
-    for (const [v, t] of options) sel.appendChild(h('option', { value: String(v), text: t }));
+    const fill = (list) => {
+      sel.innerHTML = '';
+      for (const [v, t] of list) sel.appendChild(h('option', { value: String(v), text: t }));
+    };
+    fill(typeof options === 'function' ? options() : options);
     sel.addEventListener('change', () => {
       const cur = getPath(path);
-      setPath(path, typeof cur === 'number' ? parseFloat(sel.value) : sel.value);
-      changed();
+      const v = typeof cur === 'number' ? parseFloat(sel.value) : sel.value;
+      if (opts.onChange) opts.onChange(v); else setPath(path, v);
+      changed(); syncUI();
     });
-    binds.push(() => { sel.value = String(getPath(path)); });
-    return h('div', { class: 'row' }, opts.hideLabel ? null : h('label', { for: id, text: label }), sel);
+    binds.push(() => {
+      if (typeof options === 'function') fill(options());
+      sel.value = String(getPath(path));
+    });
+    return h('div', { class: 'row' }, h('label', { for: id, text: label }), sel);
+  }
+
+  // フォント＋太さ（太さは選んだフォントにあるものだけ）
+  function fontField(part) {
+    const fontSel = selectField('フォント', ['fonts', part, 'font'], FONTS.map((f) => [f.family, f.label]), {
+      onChange: (v) => {
+        const f = findFont(v);
+        state.fonts[part].font = f.family;
+        state.fonts[part].weight = nearestWeight(f, state.fonts[part].weight);
+      }
+    });
+    const weightSel = selectField('太さ', ['fonts', part, 'weight'],
+      () => findFont(state.fonts[part].font).weights.map((w) => [w, WEIGHT_LABELS[w] || String(w)]));
+    return h('div', { class: 'grid2' }, fontSel, weightSel);
   }
 
   function fileButton(label, onFile) {
@@ -400,25 +478,20 @@
 
   function buildPanels() {
     const panels = $('panels');
-    const fontOpts = JP_FONTS.map((f) => [f.family, f.label]);
 
     // 名前・見出し
     panels.appendChild(section('名前・見出し', [
-      block('キャラ名', [
+      block('キャラ名とクラス名', [
         textField('名前（右上の大きな文字）', ['name', 'text']),
-        textField('名前の下の小さな文字', ['sub', 'text'], { note: 'クラス名や肩書きなど。空欄にすると表示されません。' }),
+        textField('クラス名（名前の下）', ['sub', 'text'], { note: '空欄にすると表示されません。' }),
         adv('詳細設定：文字サイズ', [
           rangeField('名前の文字サイズ', ['name', 'size'], 28, 90, 1, 'px'),
-          rangeField('小さな文字のサイズ', ['sub', 'size'], 12, 36, 1, 'px')
+          rangeField('クラス名の文字サイズ', ['sub', 'size'], 12, 40, 1, 'px')
         ])
       ]),
       block('見出し', [
         textField('見出しの文字', ['heading', 'text']),
         adv('詳細設定：文字サイズ', [rangeField('文字サイズ', ['heading', 'size'], 24, 72, 1, 'px')])
-      ]),
-      block('フォント', [
-        selectField('名前・見出し・ランクのフォント', ['nameFont'], fontOpts),
-        selectField('本文・項目名のフォント', ['bodyFont'], fontOpts)
       ])
     ], true));
 
@@ -427,11 +500,18 @@
     status.artName = h('span', { class: 'file-name' });
     const [iconBtn, iconInput] = fileButton('アイコン画像を選ぶ', loadIconFile);
     status.iconName = h('span', { class: 'file-name' });
-    const iconClear = h('button', {
+    status.iconClear = h('button', {
       type: 'button', class: 'btn small ghost', text: '外す',
       onclick: () => { if (assets.icon) URL.revokeObjectURL(assets.icon.url); assets.icon = null; updateStatus(); requestRender(); }
     });
-    status.iconClear = iconClear;
+    const [frameBtn, frameInput] = fileButton('枠画像を選ぶ', loadFrameFile);
+    status.frameName = h('span', { class: 'file-name' });
+    status.frameClear = h('button', {
+      type: 'button', class: 'btn small ghost', text: '外す',
+      onclick: () => { if (assets.frame) URL.revokeObjectURL(assets.frame.url); assets.frame = null; updateStatus(); requestRender(); }
+    });
+    status.frameToggle = checkField('自作の枠画像を使う', ['card', 'useCustomFrame']);
+    const frameTemplateBtn = h('button', { type: 'button', class: 'btn small', text: '今の枠を下絵用に保存', onclick: exportFrameTemplate });
 
     panels.appendChild(section('キャラクターカード', [
       block('キャラ画像', [
@@ -450,19 +530,26 @@
           colorField('下側の色', ['card', 'artBottom'])
         ])
       ]),
-      block('レアリティと枠', [
+      block('カードの枠', [
         h('div', { class: 'grid2' },
           selectField('星の数', ['card', 'stars'], [[5, '★5'], [4, '★4'], [3, '★3'], [2, '★2'], [1, '★1'], [0, 'なし']]),
-          selectField('枠の色', ['card', 'frame'], [['auto', '星の数に合わせる'], ['gold', '金'], ['silver', '銀'], ['bronze', '銅']]))
+          selectField('枠の色', ['card', 'frame'], [['auto', '星の数に合わせる'], ['gold', '金'], ['silver', '銀'], ['bronze', '銅']])),
+        adv('自作の枠画像を使う', [
+          h('div', { class: 'btn-row' }, frameBtn, frameInput, status.frameClear, status.frameName),
+          status.frameToggle,
+          h('div', { class: 'note', text: 'カード部分（424×708、高画質なら848×1416）に引き伸ばして、キャラ画像の上に重ねます。イラストを見せたい部分は透明にした PNG を使ってください。' }),
+          h('div', { class: 'note', text: '星・クラス名・アイコンは枠画像の上に表示されます。不要なら星を「なし」、クラス名を空欄にしてください。' }),
+          h('div', { class: 'btn-row' }, frameTemplateBtn),
+          h('div', { class: 'note', text: '今のCSSの枠を透過PNG（848×1416）で保存します。お絵描きソフトで加工する下絵にどうぞ。' })
+        ])
       ]),
       block('クラス表記（カード下部）', [
         textField('クラス名（英字）', ['card', 'classEn']),
         textField('クラス名の読み', ['card', 'classRuby']),
         h('div', { class: 'row' }, h('span', { class: 'label', text: 'クラスアイコン' }),
-          h('div', { class: 'btn-row' }, iconBtn, iconInput, iconClear, status.iconName),
+          h('div', { class: 'btn-row' }, iconBtn, iconInput, status.iconClear, status.iconName),
           h('div', { class: 'note', text: '同梱していません。ご自身で用意した画像（透過PNG推奨）を使ってください。' })),
-        adv('詳細設定：フォント・サイズ', [
-          selectField('英字のフォント', ['card', 'classFont'], CLASS_FONTS.map((f) => [f.family, f.label])),
+        adv('詳細設定：文字サイズ', [
           rangeField('英字の文字サイズ', ['card', 'classSize'], 24, 80, 1, 'px')
         ])
       ])
@@ -496,6 +583,28 @@
       ])
     ], true));
 
+    // フォント
+    const bulk = h('select', { 'aria-label': 'すべての文字のフォント' },
+      h('option', { value: '', text: '選ぶとまとめて変更…' }),
+      FONTS.filter((f) => !/英字のみ/.test(f.label)).map((f) => h('option', { value: f.family, text: f.label })));
+    bulk.addEventListener('change', () => {
+      const f = findFont(bulk.value);
+      if (!bulk.value) return;
+      for (const [part] of FONT_PARTS) {
+        if (part === 'classEn') continue;
+        state.fonts[part].font = f.family;
+        state.fonts[part].weight = nearestWeight(f, DEFAULTS.fonts[part].weight);
+      }
+      bulk.value = '';
+      changed(); syncUI();
+    });
+    panels.appendChild(section('フォント', [
+      h('div', { class: 'note', text: 'キャラ紹介メーカーと同じ Google Fonts を使えます。「英字のみ」のフォントは日本語部分が標準のゴシック体になります。' }),
+      block('まとめて変更', [h('div', { class: 'row' }, bulk),
+        h('div', { class: 'note', text: 'カードのクラス名（英字）以外を一括で変更します。' })]),
+      FONT_PARTS.map(([part, label]) => block(label, [fontField(part)]))
+    ], false));
+
     // 背景・書き出し
     panels.appendChild(section('背景・書き出し', [
       block('背景', [
@@ -516,6 +625,9 @@
     status.artName.textContent = assets.art ? `読み込み済み：${assets.art.name}` : '未選択';
     status.iconName.textContent = assets.icon ? `使用中：${assets.icon.name}` : '';
     status.iconClear.hidden = !assets.icon;
+    status.frameName.textContent = assets.frame ? `読み込み済み：${assets.frame.name}` : '未選択（CSSの枠を使用中）';
+    status.frameClear.hidden = !assets.frame;
+    status.frameToggle.hidden = !assets.frame;
     syncUI();
   }
 
@@ -549,8 +661,10 @@
     return { url: URL.createObjectURL(blob), w: c.width, h: c.height };
   }
 
+  const isImage = (file) => file && /^image\//.test(file.type || 'image/');
+
   async function loadArtFile(file) {
-    if (!file || !/^image\//.test(file.type || 'image/')) return;
+    if (!isImage(file)) return;
     try {
       const r = await fileToUrl(file, 2400);
       if (assets.art) URL.revokeObjectURL(assets.art.url);
@@ -565,10 +679,25 @@
   }
 
   async function loadIconFile(file) {
+    if (!isImage(file)) return;
     try {
       const r = await fileToUrl(file, 512);
       if (assets.icon) URL.revokeObjectURL(assets.icon.url);
       assets.icon = { url: r.url, name: file.name || '画像' };
+      updateStatus();
+      changed();
+    } catch (e) {
+      alert('画像を読み込めませんでした。');
+    }
+  }
+
+  async function loadFrameFile(file) {
+    if (!isImage(file)) return;
+    try {
+      const r = await fileToUrl(file, 1800);
+      if (assets.frame) URL.revokeObjectURL(assets.frame.url);
+      assets.frame = { url: r.url, name: file.name || '画像' };
+      state.card.useCustomFrame = true;
       updateStatus();
       changed();
     } catch (e) {
@@ -587,15 +716,16 @@
   function zoomAt(px, py, newScale) {
     const a = assets.art;
     if (!a) return;
+    const box = artBox();
     newScale = Math.min(4, Math.max(0.3, newScale));
-    const base = Math.max(ART_W / a.w, ART_H / a.h);
+    const base = Math.max(box.w / a.w, box.h / a.h);
     const w = a.w * base * state.art.scale, hh = a.h * base * state.art.scale;
-    const L = (ART_W - w) / 2 + state.art.x, T = (ART_H - hh) / 2 + state.art.y;
+    const L = (box.w - w) / 2 + state.art.x, T = (box.h - hh) / 2 + state.art.y;
     const u = (px - L) / w, v = (py - T) / hh;
     const w2 = a.w * base * newScale, h2 = a.h * base * newScale;
     state.art.scale = Math.round(newScale * 1000) / 1000;
-    state.art.x = Math.round(px - u * w2 - (ART_W - w2) / 2);
-    state.art.y = Math.round(py - v * h2 - (ART_H - h2) / 2);
+    state.art.x = Math.round(px - u * w2 - (box.w - w2) / 2);
+    state.art.y = Math.round(py - v * h2 - (box.h - h2) / 2);
   }
 
   function localPoint(e) {
@@ -679,8 +809,11 @@
   });
 
   /* ------------------------------------------------------------------
-   * 書き出し
-   * 使っている文字だけを含むフォントを Google Fonts から取り寄せて埋め込む
+   * 書き出し用のフォント埋め込み
+   * 画像化するときはページのフォントが使えないため、Google Fonts から
+   * フォントを取り寄せて埋め込む。
+   *   1. 使っている文字だけを含む軽いフォント（text= 指定）を取得
+   *   2. だめなら通常のフォントを取得し、使っている文字の範囲だけ埋め込む
    * ------------------------------------------------------------------ */
   function blobToDataUrl(blob) {
     return new Promise((res, rej) => {
@@ -691,86 +824,176 @@
     });
   }
 
-  async function buildFontCss() {
-    const text = [...new Set([...(stage.textContent + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-－？')])]
-      .filter((c) => c.trim()).join('');
-    const nf = findFont(JP_FONTS, state.nameFont);
-    const bf = findFont(JP_FONTS, state.bodyFont);
-    const cf = findFont(CLASS_FONTS, state.card.classFont);
-    const want = new Map();
-    const add = (f, w) => { if (!want.has(f.family)) want.set(f.family, new Set()); want.get(f.family).add(w); };
-    add(nf, nf.heavy); add(nf, nf.bold); add(bf, bf.bold); add(cf, cf.heavy);
+  function familyParam(family, weights) {
+    const name = family.replace(/ /g, '+');
+    return weights.length === 1 && weights[0] === 400 ? name : `${name}:wght@${weights.join(';')}`;
+  }
 
-    const parts = await Promise.all([...want].map(async ([family, ws]) => {
-      const weights = [...ws].sort((a, b) => a - b);
-      const fam = family.replace(/ /g, '+') + (weights.length === 1 && weights[0] === 400 ? '' : ':wght@' + weights.join(';'));
-      const url = `https://fonts.googleapis.com/css2?family=${fam}&text=${encodeURIComponent(text)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('font css ' + res.status);
-      let css = await res.text();
-      const urls = [...new Set([...css.matchAll(/url\((https:[^)]+)\)/g)].map((m) => m[1]))];
-      for (const u of urls) {
-        const r = await fetch(u);
-        if (!r.ok) throw new Error('font file ' + r.status);
-        css = css.split(u).join(await blobToDataUrl(await r.blob()));
+  async function fetchText(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${res.status} ${url}`);
+    return res.text();
+  }
+
+  async function inlineFontUrls(css) {
+    const urls = [...new Set([...css.matchAll(/url\((["']?)(https:[^)"']+)\1\)/g)].map((m) => m[2]))];
+    const data = await Promise.all(urls.map(async (u) => {
+      const r = await fetch(u);
+      if (!r.ok) throw new Error('font file ' + r.status);
+      return blobToDataUrl(await r.blob());
+    }));
+    urls.forEach((u, i) => { css = css.split(u).join(data[i]); });
+    return css;
+  }
+
+  // unicode-range に使っている文字が1つでも含まれる @font-face だけ残す
+  function filterByUnicodeRange(css, codes) {
+    const blocks = css.split('@font-face').slice(1).map((b) => '@font-face' + b.slice(0, b.indexOf('}') + 1));
+    return blocks.filter((b) => {
+      const m = b.match(/unicode-range:\s*([^;]+);/);
+      if (!m) return true;
+      const ranges = m[1].split(',').map((r) => {
+        const [a, z] = r.trim().replace(/^U\+/i, '').split('-');
+        if (a.includes('?')) return [parseInt(a.replace(/\?/g, '0'), 16), parseInt(a.replace(/\?/g, 'F'), 16)];
+        return [parseInt(a, 16), parseInt(z || a, 16)];
+      });
+      return codes.some((c) => ranges.some(([lo, hi]) => c >= lo && c <= hi));
+    }).join('\n');
+  }
+
+  function usedFonts() {
+    const want = new Map();
+    for (const [part] of FONT_PARTS) {
+      const f = state.fonts[part];
+      if (!want.has(f.font)) want.set(f.font, new Set());
+      want.get(f.font).add(f.weight);
+    }
+    return [...want].map(([family, ws]) => [family, [...ws].sort((a, b) => a - b)]);
+  }
+
+  async function buildFontCss() {
+    const chars = [...new Set([...(stage.textContent + '0123456789+-－？')])].filter((c) => c.trim());
+    const text = chars.join('');
+    const codes = chars.map((c) => c.codePointAt(0));
+    const parts = await Promise.all(usedFonts().map(async ([family, weights]) => {
+      const base = `https://fonts.googleapis.com/css2?family=${familyParam(family, weights)}`;
+      try {
+        return await inlineFontUrls(await fetchText(`${base}&text=${encodeURIComponent(text)}`));
+      } catch (e) {
+        console.warn('文字を絞ったフォントの取得に失敗、通常のフォントで再試行します', family, e);
+        return inlineFontUrls(filterByUnicodeRange(await fetchText(`${base}&display=swap`), codes));
       }
-      return css;
     }));
     return parts.join('\n');
   }
 
+  /* ------------------------------------------------------------------
+   * 書き出し
+   * ------------------------------------------------------------------ */
   const exportBtn = $('exportBtn');
   const modal = $('exportModal');
   const exportImg = $('exportImg');
+  const exportNote = $('exportNote');
   const downloadLink = $('downloadLink');
   let lastUrl = null;
 
-  function safeFileName(s) {
+  function safeFileName(s, suffix) {
     const base = String(s || '').replace(/\s+/g, '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').slice(0, 40);
-    return (base || 'character') + '_ステータス.png';
+    return (base || 'character') + suffix;
   }
 
-  exportBtn.addEventListener('click', async () => {
+  async function snapshot(node, opts) {
     if (!window.htmlToImage) {
-      alert('書き出し用のライブラリを読み込めませんでした。ネットワーク接続を確認して、ページを再読み込みしてください。');
-      return;
+      throw Object.assign(new Error('no lib'), { userMessage: '書き出し用のライブラリを読み込めませんでした。ネットワーク接続を確認して、ページを再読み込みしてください。' });
     }
-    exportBtn.disabled = true;
-    const label = exportBtn.textContent;
-    exportBtn.textContent = '作成中…';
+    render();
+    if (document.fonts) await document.fonts.ready;
+    let fontsOk = true;
     try {
-      render();
-      if (document.fonts) await document.fonts.ready;
-      const opts = {
-        width: W,
-        height: H,
-        pixelRatio: state.exportScale,
-        style: { transform: 'none', left: '0', top: '0' },
-        filter: (node) => !(node.classList && (node.classList.contains('st-art-empty') || node.hidden))
-      };
-      try {
-        opts.fontEmbedCSS = await buildFontCss();
-      } catch (e) {
-        console.warn('フォントの埋め込みに失敗したため、端末のフォントで書き出します', e);
-        opts.skipFonts = true;
-      }
-      const blob = await window.htmlToImage.toBlob(stage, opts);
-      if (!blob) throw new Error('toBlob failed');
-      if (lastUrl) URL.revokeObjectURL(lastUrl);
-      lastUrl = URL.createObjectURL(blob);
-      exportImg.src = lastUrl;
-      downloadLink.href = lastUrl;
-      downloadLink.download = safeFileName(state.name.text);
-      modal.hidden = false;
-      downloadLink.focus();
+      opts.fontEmbedCSS = await buildFontCss();
+    } catch (e) {
+      console.warn('フォントの埋め込みに失敗したため、端末のフォントで書き出します', e);
+      opts.skipFonts = true;
+      fontsOk = false;
+    }
+    const blob = await window.htmlToImage.toBlob(node, opts);
+    if (!blob) throw new Error('toBlob failed');
+    return { blob, fontsOk };
+  }
+
+  function showResult(blob, fileName, fontsOk) {
+    if (lastUrl) URL.revokeObjectURL(lastUrl);
+    lastUrl = URL.createObjectURL(blob);
+    exportImg.src = lastUrl;
+    downloadLink.href = lastUrl;
+    downloadLink.download = fileName;
+    exportNote.hidden = fontsOk;
+    modal.hidden = false;
+    downloadLink.focus();
+  }
+
+  async function runExport(btn, fn) {
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.textContent = '作成中…';
+    try {
+      await fn();
     } catch (err) {
       console.error(err);
-      alert('画像の書き出しに失敗しました。ページを「ローカルファイルとして直接開いている」場合は、GitHub Pages などのWebサーバー経由で開いてください。');
+      alert(err.userMessage || '画像の書き出しに失敗しました。ページを「ローカルファイルとして直接開いている」場合は、GitHub Pages などのWebサーバー経由で開いてください。');
     } finally {
-      exportBtn.disabled = false;
-      exportBtn.textContent = label;
+      btn.disabled = false;
+      btn.textContent = label;
     }
-  });
+  }
+
+  exportBtn.addEventListener('click', () => runExport(exportBtn, async () => {
+    const { blob, fontsOk } = await snapshot(stage, {
+      width: W,
+      height: H,
+      pixelRatio: state.exportScale,
+      style: { transform: 'none', left: '0', top: '0' },
+      filter: (node) => !(node.classList && (node.classList.contains('st-art-empty') || node.hidden))
+    });
+    showResult(blob, safeFileName(state.name.text, '_ステータス.png'), fontsOk);
+  }));
+
+  // 今のCSS枠を、イラスト部分を透明にした PNG で保存（自作枠の下絵用）
+  // 画面全体を枠だけ残して書き出し、カードの範囲を切り出す
+  const CARD_RECT = { x: 8, y: 6, w: 424, h: 708 };
+  async function exportFrameTemplate(e) {
+    const btn = e.currentTarget;
+    const card = $('card');
+    await runExport(btn, async () => {
+      const prev = state.card.useCustomFrame;
+      state.card.useCustomFrame = false;
+      render();
+      card.classList.add('template');
+      try {
+        const hideCls = ['st-bg', 'st-glow-line', 'st-title', 'st-heading', 'st-panel', 'st-art', 'st-class-en', 'st-class-ruby', 'st-icon-img', 'st-stars'];
+        const k = 2;
+        const { blob, fontsOk } = await snapshot(stage, {
+          width: W,
+          height: H,
+          pixelRatio: k,
+          style: { transform: 'none', left: '0', top: '0', background: 'transparent' },
+          filter: (node) => !(node.hidden || (node.classList && hideCls.some((c) => node.classList.contains(c))))
+        });
+        const img = await loadImage(URL.createObjectURL(blob));
+        const c = document.createElement('canvas');
+        c.width = CARD_RECT.w * k;
+        c.height = CARD_RECT.h * k;
+        c.getContext('2d').drawImage(img, CARD_RECT.x * k, CARD_RECT.y * k, c.width, c.height, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        const out = await new Promise((r) => c.toBlob(r, 'image/png'));
+        showResult(out, 'card-frame_848x1416.png', fontsOk);
+      } finally {
+        card.classList.remove('template');
+        state.card.useCustomFrame = prev;
+        render();
+      }
+    });
+  }
 
   const closeModal = () => { modal.hidden = true; exportBtn.focus(); };
   $('closeModalBtn').addEventListener('click', closeModal);
@@ -797,5 +1020,5 @@
   }
 
   // 動作確認用（コンソールから参照できる）
-  window.__fgoStatus = { state, assets, render, loadArtFile, loadIconFile };
+  window.__fgoStatus = { state, assets, render, loadArtFile, loadIconFile, loadFrameFile };
 })();

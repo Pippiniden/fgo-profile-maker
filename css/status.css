@@ -1,7 +1,7 @@
 /*
  * FGO風ステータス画面メーカー
  * ステージ（.st-stage）は実寸 1280×720 で組み、JS で縮小表示します。
- * 色やフォントは JS から CSS 変数で差し込みます。
+ * 色やフォントは JS から CSS 変数・インラインスタイルで差し込みます。
  */
 
 /* ---------- ページ側（既存 style.css への追加・上書き） ---------- */
@@ -18,6 +18,7 @@
 .canvas-wrap.wide .drop-overlay { z-index: 50; }
 
 .modal-body.wide { width: min(960px, 100%); }
+.modal-body .warn { color: var(--accent); font-size: 12px; margin: 6px 0 0; }
 
 .param-row {
   display: grid;
@@ -40,18 +41,16 @@
   --bg-top: #3a7cc0;
   --bg-mid: #1c4f93;
   --bg-bottom: #0e2457;
-  --frame-light: #fff3b8;
-  --frame-mid: #e2b54c;
-  --frame-dark: #8a5a14;
-  --navy-light: #2a4f9c;
+  --frame-light: #fff6c8;
+  --frame-mid: #e0b24a;
+  --frame-dark: #7d4f0e;
+  --frame-edge: #3a2405;
+  --navy-light: #2c56a8;
   --navy: #173677;
-  --navy-dark: #0c1f4d;
+  --navy-dark: #0b1d4a;
   --art-top: #f2f2f2;
   --art-bottom: #b9bcc0;
   --panel-alpha: .93;
-  --name-font: "Zen Kaku Gothic New";
-  --body-font: "Zen Kaku Gothic New";
-  --class-font: "Cormorant Garamond";
   --fallback: "Hiragino Sans", "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", sans-serif;
   --outline: #0b1633;
 
@@ -61,7 +60,7 @@
   height: 720px;
   overflow: hidden;
   transform-origin: 0 0;
-  font-family: var(--body-font), var(--fallback);
+  font-family: "Zen Kaku Gothic New", var(--fallback);
   color: #fff;
   line-height: 1.4;
   user-select: none;
@@ -110,7 +109,7 @@
 /* ---------- 光るライン ---------- */
 .st-glow-line {
   left: 420px;
-  top: 94px;
+  top: 96px;
   width: 860px;
   height: 4px;
   position: absolute;
@@ -125,39 +124,47 @@
   background: radial-gradient(ellipse at center, #fff 0 6%, rgba(200, 235, 255, .9) 14%, rgba(120, 190, 255, .35) 38%, transparent 70%);
 }
 
-/* ---------- 文字（右側） ---------- */
-.st-name, .st-subname, .st-heading {
+/* ---------- 名前・クラス名（右上） ---------- */
+.st-title {
   position: absolute;
-  white-space: nowrap;
-  font-family: var(--name-font), var(--fallback);
-  font-weight: 900;
+  right: 26px;
+  top: 0;
+  height: 96px;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
 }
+.st-title > div { line-height: 1.08; white-space: nowrap; }
+.st-title span { display: inline-block; white-space: nowrap; }
 .st-name {
-  right: 24px;
-  top: 2px;
-  font-size: 60px;
-  line-height: 1.2;
-  letter-spacing: .02em;
+  font-size: 56px;
+  letter-spacing: .03em;
   text-shadow:
     -3px -3px 0 var(--outline), 3px -3px 0 var(--outline), -3px 3px 0 var(--outline), 3px 3px 0 var(--outline),
     0 -3px 0 var(--outline), 0 3px 0 var(--outline), -3px 0 0 var(--outline), 3px 0 0 var(--outline),
     2px 5px 6px rgba(0, 0, 0, .6);
 }
 .st-subname {
-  right: 24px;
-  top: 70px;
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.2;
+  margin-top: 2px;
+  margin-right: 2px;
+  font-size: 22px;
+  letter-spacing: .06em;
   text-shadow:
     -2px -2px 0 var(--outline), 2px -2px 0 var(--outline), -2px 2px 0 var(--outline), 2px 2px 0 var(--outline),
-    0 -2px 0 var(--outline), 0 2px 0 var(--outline), -2px 0 0 var(--outline), 2px 0 0 var(--outline);
+    0 -2px 0 var(--outline), 0 2px 0 var(--outline), -2px 0 0 var(--outline), 2px 0 0 var(--outline),
+    1px 3px 4px rgba(0, 0, 0, .5);
 }
+.st-subname:empty, .st-subname span:empty { display: none; }
+
 .st-heading {
+  position: absolute;
   left: 456px;
   width: 812px;
-  top: 108px;
+  top: 110px;
   text-align: center;
+  white-space: nowrap;
   font-size: 48px;
   line-height: 1.3;
   letter-spacing: .04em;
@@ -181,27 +188,31 @@
   display: inline-block;
   min-width: 248px;
   height: 27px;
-  margin-left: 0;
   padding: 0 44px 0 12px;
   font-size: 19px;
-  font-weight: 700;
   line-height: 27px;
   color: #23272b;
-  background: linear-gradient(180deg, #fbfbfb 0%, #e3e5e8 45%, #b9bec4 100%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .9) 0 1px, transparent 1px),
+    linear-gradient(180deg, #fbfbfb 0%, #e6e8eb 45%, #c3c8ce 85%, #9aa1a8 100%);
   clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 100%, 0 100%);
   white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
 }
 .st-box {
   position: relative;
   margin-top: -1px;
-  border: 2px solid #d6dbe0;
+  border: 2px solid #d9dee3;
   border-radius: 0 6px 6px 6px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 30%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, .18)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .015) 0 2px, transparent 2px 4px),
     rgba(40, 43, 47, var(--panel-alpha));
   box-shadow:
-    0 0 0 1px rgba(10, 16, 30, .8),
-    inset 0 0 0 1px rgba(0, 0, 0, .5),
+    0 0 0 1px rgba(10, 16, 30, .85),
+    inset 0 0 0 1px rgba(0, 0, 0, .6),
+    inset 0 0 0 2px rgba(255, 255, 255, .06),
+    inset 0 10px 18px -12px rgba(255, 255, 255, .12),
     0 6px 16px rgba(0, 0, 0, .35);
 }
 /* タブから右へ伸びる白いライン */
@@ -210,7 +221,7 @@
   position: absolute;
   left: 0; right: -2px; top: -2px;
   height: 2px;
-  background: #e7ebef;
+  background: linear-gradient(90deg, #f4f6f8, #e2e6ea 70%, #c9ced4);
 }
 
 /* キャラクター詳細 */
@@ -221,7 +232,6 @@
 }
 .st-detail-text {
   font-size: 26px;
-  font-weight: 700;
   line-height: 34px;
   white-space: pre-wrap;
   word-break: break-all;
@@ -249,16 +259,13 @@
 }
 .st-param-label {
   font-size: 26px;
-  font-weight: 700;
   white-space: nowrap;
   text-shadow: 1px 2px 2px rgba(0, 0, 0, .6);
 }
 .st-param-rank {
   font-size: 34px;
-  font-weight: 700;
   letter-spacing: .02em;
   white-space: nowrap;
-  font-family: var(--name-font), var(--fallback);
   text-shadow: 1px 2px 2px rgba(0, 0, 0, .6);
 }
 .st-param-rank small {
@@ -317,20 +324,71 @@
   background: linear-gradient(180deg, #fff2a8 0%, #ffd34a 35%, #e9a91c 65%, #b67a0e 100%);
 }
 
-/* ---------- カード ---------- */
+/* =================================================================
+ * カード
+ * 金属の質感：周囲を回り込むグラデーション（conic）で映り込みを作り、
+ * 内外の明暗ラインで面取り（ベベル）を表現しています。
+ * ================================================================= */
 .st-card {
   position: absolute;
   left: 8px;
   top: 6px;
   width: 424px;
   height: 708px;
-  padding: 7px;
-  border-radius: 10px;
-  background:
-    linear-gradient(135deg, var(--frame-light) 0%, var(--frame-mid) 18%, var(--frame-dark) 38%, var(--frame-mid) 55%, var(--frame-light) 72%, var(--frame-mid) 86%, var(--frame-dark) 100%);
+  padding: 8px;
+  border-radius: 11px;
   box-shadow:
-    0 0 0 1px rgba(40, 25, 5, .9),
-    0 8px 20px rgba(0, 0, 0, .55);
+    0 0 0 1px var(--frame-edge),
+    0 0 0 2px rgba(255, 240, 190, .25),
+    0 10px 24px rgba(0, 0, 0, .55);
+}
+/* 金属の枠本体
+   内側をくり抜くため、上下左右の4本の帯で組んでいます（下絵の書き出しで内側が透明になるように）。
+   4本とも同じ大きさのグラデーションを位置だけずらして敷き、1枚の板に見せています。 */
+.st-frame-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.st-frame-ring i {
+  position: absolute;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .35), transparent 12%, transparent 88%, rgba(0, 0, 0, .25)),
+    conic-gradient(from 210deg at 50% 50%,
+      var(--frame-light), var(--frame-mid) 7%, var(--frame-dark) 14%, var(--frame-mid) 21%, var(--frame-light) 27%,
+      var(--frame-mid) 34%, var(--frame-dark) 43%, var(--frame-mid) 50%, var(--frame-light) 56%,
+      var(--frame-mid) 64%, var(--frame-dark) 72%, var(--frame-mid) 80%, var(--frame-light) 87%,
+      var(--frame-mid) 94%, var(--frame-light));
+  background-size: 424px 708px;
+}
+.st-frame-ring .t { left: 0; right: 0; top: 0; height: 8px; background-position: 0 0; }
+.st-frame-ring .b { left: 0; right: 0; bottom: 0; height: 8px; background-position: 0 -700px; }
+.st-frame-ring .l { left: 0; top: 8px; bottom: 8px; width: 8px; background-position: 0 -8px; }
+.st-frame-ring .r { right: 0; top: 8px; bottom: 8px; width: 8px; background-position: -416px -8px; }
+/* 面取りの明暗（外周のふち） */
+.st-frame-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 252, 230, .95),
+    inset 1px 2px 0 1px rgba(255, 255, 255, .5),
+    inset -1px -2px 0 1px rgba(80, 45, 0, .45),
+    inset 0 0 0 7px rgba(0, 0, 0, 0),
+    inset 0 0 0 8px rgba(70, 40, 5, .35);
+}
+/* 枠の中ほどに彫り込んだ細い溝 */
+.st-card::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 9px;
+  border: 1px solid rgba(70, 40, 5, .75);
+  box-shadow: inset 0 0 0 1px rgba(255, 245, 205, .55), 0 0 0 1px rgba(255, 245, 205, .35);
+  pointer-events: none;
 }
 .st-card-inner {
   position: relative;
@@ -339,7 +397,20 @@
   overflow: hidden;
   border-radius: 4px;
   background: var(--navy-dark);
-  box-shadow: inset 0 0 0 1px rgba(60, 40, 10, .8);
+  box-shadow: 0 0 0 1px var(--frame-edge);
+}
+/* 内側のふち（イラストに落ちる影） */
+.st-card-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px var(--frame-edge),
+    inset 0 0 0 2px rgba(255, 238, 180, .55),
+    inset 0 0 14px rgba(0, 0, 0, .45);
+  z-index: 5;
 }
 
 /* イラスト */
@@ -364,7 +435,6 @@
   position: absolute;
   left: 0; top: 0;
   max-width: none;
-  transform-origin: 0 0;
   pointer-events: none;
 }
 .st-art-empty {
@@ -385,16 +455,40 @@
   border-radius: 14px;
 }
 
+/* 自作の枠画像 */
+.st-frame-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+/* 帯に共通の紺地＋唐草風の模様 */
+.st-card-top,
+.st-card-bottom,
+.st-crown {
+  background:
+    repeating-radial-gradient(circle at 18% 120%, rgba(255, 255, 255, .03) 0 2px, transparent 2px 9px),
+    repeating-radial-gradient(circle at 82% 120%, rgba(255, 255, 255, .03) 0 2px, transparent 2px 9px),
+    radial-gradient(ellipse 70% 90% at 50% 0%, rgba(140, 180, 255, .22), transparent 70%),
+    linear-gradient(180deg, var(--navy-light), var(--navy) 50%, var(--navy-dark));
+}
+
 /* 上部の帯と星 */
 .st-card-top {
   position: absolute;
   left: 0; right: 0; top: 0;
   height: 34px;
-  background:
-    radial-gradient(ellipse 60% 140% at 50% 0%, rgba(255, 255, 255, .12), transparent 70%),
-    linear-gradient(180deg, var(--navy-light), var(--navy) 60%, var(--navy-dark));
-  border-bottom: 3px solid var(--frame-mid);
-  box-shadow: 0 2px 0 rgba(60, 35, 5, .7), 0 4px 6px rgba(0, 0, 0, .35);
+  box-shadow:
+    0 1px 0 var(--frame-edge),
+    0 2px 0 var(--frame-dark),
+    0 4px 0 var(--frame-mid),
+    0 5px 0 var(--frame-light),
+    0 6px 0 var(--frame-edge),
+    0 8px 8px rgba(0, 0, 0, .35);
+  z-index: 2;
 }
 .st-crown {
   position: absolute;
@@ -403,54 +497,80 @@
   transform: translateX(-50%);
   height: 48px;
   min-width: 70px;
-  padding: 0 26px 2px;
+  padding: 0 26px 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid var(--frame-mid);
+  border: 4px solid var(--frame-mid);
   border-top: 0;
   border-radius: 0 0 40px 40px / 0 0 26px 26px;
-  background:
-    linear-gradient(180deg, var(--navy-light), var(--navy) 55%, var(--navy-dark));
-  box-shadow: 0 2px 0 rgba(60, 35, 5, .7), 0 4px 8px rgba(0, 0, 0, .4), inset 0 -2px 0 var(--frame-light);
+  box-shadow:
+    0 0 0 1px var(--frame-edge),
+    0 2px 0 1px var(--frame-light),
+    0 3px 0 1px var(--frame-edge),
+    0 6px 10px rgba(0, 0, 0, .45),
+    inset 0 -1px 0 var(--frame-light),
+    inset 0 -2px 0 var(--frame-edge),
+    inset 0 8px 12px -6px rgba(0, 0, 0, .5);
+  z-index: 3;
 }
 .st-crown.empty { display: none; }
 .st-stars {
   display: flex;
   gap: 3px;
+  filter: drop-shadow(0 0 1px rgba(60, 35, 0, .9)) drop-shadow(0 2px 2px rgba(0, 0, 0, .55));
 }
 .st-star {
   width: 34px;
   height: 33px;
-  background: linear-gradient(180deg, #fffbe0 0%, #ffe58a 35%, #f0bf3c 65%, #b9831c 100%);
+  background:
+    linear-gradient(115deg, transparent 0 40%, rgba(255, 255, 255, .55) 46%, transparent 54%),
+    linear-gradient(180deg, #fffbe0 0%, #ffe58a 35%, #f0bf3c 65%, #a8720f 100%);
   clip-path: polygon(50% 0%, 61.8% 35.4%, 98.5% 35.4%, 68.8% 57.3%, 79.4% 91.6%, 50% 70.8%, 20.6% 91.6%, 31.2% 57.3%, 1.5% 35.4%, 38.2% 35.4%);
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .6));
 }
 
-/* 四隅の飾り */
+/* 四隅の飾り（歯車状のリング＋星形の飾り） */
 .st-corner {
   position: absolute;
-  width: 92px;
-  height: 92px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  border: 3px solid var(--frame-mid);
   background:
-    radial-gradient(circle, transparent 0 38%, var(--frame-mid) 38.5% 41%, transparent 41.5% 52%, rgba(255, 230, 160, .7) 52.5% 54%, transparent 54.5%),
-    radial-gradient(circle at 50% 50%, var(--navy-light), var(--navy-dark) 75%);
-  box-shadow: 0 0 0 2px rgba(60, 35, 5, .6), 0 3px 8px rgba(0, 0, 0, .4);
+    radial-gradient(circle, rgba(255, 245, 210, .9) 0 3px, transparent 3.5px),
+    radial-gradient(circle, transparent 0 22%, var(--frame-mid) 23% 25%, transparent 26% 37%, var(--frame-light) 38% 39%, var(--frame-dark) 40% 41%, transparent 42%),
+    radial-gradient(circle at 50% 50%, var(--navy-light), var(--navy-dark) 72%);
+  box-shadow:
+    0 0 0 1px var(--frame-edge),
+    0 0 0 3px var(--frame-mid),
+    0 0 0 4px var(--frame-light),
+    0 0 0 5px var(--frame-edge),
+    0 4px 10px rgba(0, 0, 0, .5);
+  z-index: 4;
 }
-.st-corner.tl { left: -46px; top: -46px; }
-.st-corner.tr { right: -46px; top: -46px; }
-.st-corner.bl { left: -50px; bottom: -6px; }
-.st-corner.br { right: -50px; bottom: -6px; }
-/* 角から伸びる星形の飾り */
+/* 歯車の歯 */
+.st-corner::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, var(--frame-light) 0 4deg, var(--frame-mid) 4deg 7deg, transparent 7deg 15deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 41%, #000 42% 48%, transparent 49%);
+          mask-image: radial-gradient(circle, transparent 0 41%, #000 42% 48%, transparent 49%);
+}
+.st-corner.tl { left: -48px; top: -48px; }
+.st-corner.tr { right: -48px; top: -48px; }
+.st-corner.bl { left: -52px; bottom: -8px; }
+.st-corner.br { right: -52px; bottom: -8px; }
 .st-corner i {
   position: absolute;
-  width: 58px;
-  height: 58px;
-  background: linear-gradient(135deg, var(--frame-light), var(--frame-mid) 50%, var(--frame-dark));
-  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5));
+  width: 60px;
+  height: 60px;
+  background:
+    linear-gradient(135deg, transparent 0 48%, rgba(80, 45, 0, .55) 50%, transparent 52%),
+    linear-gradient(45deg, transparent 0 48%, rgba(255, 255, 255, .6) 50%, transparent 52%),
+    linear-gradient(135deg, var(--frame-light), var(--frame-mid) 45%, var(--frame-dark));
+  clip-path: polygon(50% 0, 59% 41%, 100% 50%, 59% 59%, 50% 100%, 41% 59%, 0 50%, 41% 41%);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .55));
 }
 .st-corner.tl i { left: 52px; top: 52px; }
 .st-corner.tr i { right: 52px; top: 52px; }
@@ -461,36 +581,67 @@
   left: 0; right: 0; bottom: 0;
   height: 106px;
   overflow: hidden;
-  border-top: 3px solid var(--frame-mid);
-  background:
-    radial-gradient(ellipse 120px 50px at 22% 40%, rgba(120, 160, 230, .18), transparent 70%),
-    radial-gradient(ellipse 120px 50px at 78% 40%, rgba(120, 160, 230, .18), transparent 70%),
-    repeating-radial-gradient(circle at 50% 120%, rgba(255, 255, 255, .03) 0 6px, transparent 6px 14px),
-    linear-gradient(180deg, var(--navy-light), var(--navy) 45%, var(--navy-dark));
-  box-shadow: inset 0 3px 0 rgba(60, 35, 5, .6), inset 0 -3px 0 var(--frame-mid);
+  box-shadow:
+    inset 0 1px 0 var(--frame-edge),
+    inset 0 2px 0 var(--frame-light),
+    inset 0 4px 0 var(--frame-mid),
+    inset 0 5px 0 var(--frame-dark),
+    inset 0 6px 0 var(--frame-edge),
+    inset 0 12px 10px -6px rgba(0, 0, 0, .45);
+  z-index: 2;
 }
-/* 左右の槍のような金色ライン */
+/* 帯の内側の細い金線 */
+.st-card-bottom::before {
+  content: "";
+  position: absolute;
+  left: 40px; right: 40px;
+  top: 30px; bottom: 8px;
+  border: 1px solid rgba(226, 181, 76, .3);
+  border-radius: 6px;
+}
+/* 帯の上に重なる金のライン（カード外側との段差） */
+.st-card-bottom-edge {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 106px;
+  height: 0;
+  box-shadow: 0 -1px 0 var(--frame-edge), 0 -3px 6px rgba(0, 0, 0, .25);
+  z-index: 2;
+}
+
+/* 左右の槍のような金色ライン（先端が外側を向く） */
 .st-spear {
   position: absolute;
   top: 58px;
-  width: 128px;
+  width: 104px;
   height: 4px;
-  background: linear-gradient(90deg, transparent, var(--frame-mid) 25%, var(--frame-light) 70%, var(--frame-mid));
+  background: linear-gradient(180deg, var(--frame-light), var(--frame-mid) 50%, var(--frame-dark));
+  box-shadow: 0 0 0 1px rgba(58, 36, 5, .55);
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .7));
 }
 .st-spear::before {
   content: "";
   position: absolute;
   top: -5px;
-  width: 22px;
+  left: -22px;
+  width: 24px;
   height: 14px;
   background: linear-gradient(180deg, var(--frame-light), var(--frame-mid) 50%, var(--frame-dark));
-  clip-path: polygon(0 50%, 100% 0, 75% 50%, 100% 100%);
+  clip-path: polygon(0 50%, 100% 0, 80% 50%, 100% 100%);
+}
+.st-spear::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 14px;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--frame-light), var(--frame-dark));
+  box-shadow: 0 0 0 1px var(--frame-edge);
 }
 .st-spear.left { left: 56px; }
-.st-spear.left::before { right: -14px; transform: scaleX(-1); }
 .st-spear.right { right: 56px; transform: scaleX(-1); }
-.st-spear.right::before { right: -14px; transform: scaleX(-1); }
 
 .st-icon {
   position: absolute;
@@ -506,9 +657,16 @@
   transform: rotate(45deg);
   border: 4px solid var(--frame-mid);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, .1), transparent 60%),
+    linear-gradient(135deg, rgba(255, 255, 255, .12), transparent 55%),
     linear-gradient(180deg, var(--navy-light), var(--navy-dark));
-  box-shadow: 0 0 0 2px rgba(60, 35, 5, .7), inset 0 0 0 2px var(--frame-light), 0 3px 6px rgba(0, 0, 0, .5);
+  box-shadow:
+    0 0 0 1px var(--frame-edge),
+    0 0 0 3px var(--frame-light),
+    0 0 0 4px var(--frame-edge),
+    inset 0 0 0 1px var(--frame-light),
+    inset 0 0 0 2px var(--frame-edge),
+    inset 0 0 10px rgba(0, 0, 0, .6),
+    0 4px 8px rgba(0, 0, 0, .55);
 }
 .st-icon-frame::after {
   content: "";
@@ -532,59 +690,83 @@
   left: 0; right: 0;
   bottom: 106px;
   text-align: center;
-  font-family: var(--class-font), "Times New Roman", serif;
   font-size: 54px;
-  font-weight: 700;
   line-height: 1;
   padding-bottom: 4px;
   letter-spacing: .01em;
   color: #fff;
   white-space: nowrap;
+  z-index: 6;
   text-shadow:
     -2px -2px 0 #2b2b2b, 2px -2px 0 #2b2b2b, -2px 2px 0 #2b2b2b, 2px 2px 0 #2b2b2b,
     0 -2px 0 #2b2b2b, 0 2px 0 #2b2b2b, -2px 0 0 #2b2b2b, 2px 0 0 #2b2b2b,
     0 3px 6px rgba(0, 0, 0, .7);
 }
+.st-class-en span { display: inline-block; }
 .st-class-ruby {
   position: absolute;
   left: 0; right: 0;
   bottom: 84px;
   text-align: center;
   font-size: 15px;
-  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
+  z-index: 6;
   text-shadow:
     -1.5px -1.5px 0 #111, 1.5px -1.5px 0 #111, -1.5px 1.5px 0 #111, 1.5px 1.5px 0 #111,
     0 2px 3px rgba(0, 0, 0, .8);
 }
+.st-card-bottom .st-icon { z-index: 1; }
 
-/* カード横の矢印 */
-.st-chevron {
-  position: absolute;
-  left: 432px;
-  top: 334px;
-  width: 26px;
-  height: 52px;
-  background: linear-gradient(90deg, #c9ced6, #ffffff);
-  clip-path: polygon(0 0, 30% 0, 100% 50%, 30% 100%, 0 100%, 70% 50%);
-  filter: drop-shadow(0 0 3px rgba(150, 210, 255, .8));
-  opacity: .9;
+/* 下絵用に枠だけを書き出すとき（イラスト部分を透明に） */
+.st-card.template .st-card-inner { background: transparent; }
+
+/* ---------- 自作の枠画像を使うとき ---------- */
+.st-card.custom {
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
-.st-chevron::after {
-  content: "";
-  position: absolute;
-  inset: 0;
+.st-card.custom::before,
+.st-card.custom .st-frame-ring,
+.st-card.custom .st-card-inner::after,
+.st-card.custom .st-corner,
+.st-card.custom .st-spear,
+.st-card.custom .st-card-bottom::before,
+.st-card.custom .st-card-bottom-edge,
+.st-card.custom .st-icon-frame { display: none; }
+.st-card.custom .st-card-inner {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+.st-card.custom .st-art { top: 0; bottom: 0; }
+.st-card.custom .st-card-bottom {
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  z-index: 6;
+}
+.st-card.custom .st-card-top {
+  background: none;
+  box-shadow: none;
+}
+.st-card.custom .st-crown {
+  background: none;
+  border: 0;
+  box-shadow: none;
 }
 
 /* ---------- 枠の色（レアリティ） ---------- */
 .st-stage.frame-silver {
   --frame-light: #ffffff;
   --frame-mid: #c4ccd6;
-  --frame-dark: #6a7480;
+  --frame-dark: #5d6774;
+  --frame-edge: #22282f;
 }
 .st-stage.frame-bronze {
   --frame-light: #ffe2c4;
   --frame-mid: #c88a55;
-  --frame-dark: #6b3d1c;
+  --frame-dark: #5e3416;
+  --frame-edge: #2e1607;
 }
