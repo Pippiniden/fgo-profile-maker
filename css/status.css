@@ -71,6 +71,25 @@
 }
 .st-stage * { box-sizing: border-box; }
 
+/* 書き出し互換の文字縁取り。CSS text-stroke に頼らず、JSで実文字を多方向に重ねます。 */
+.st-outline-host { position: relative; }
+.st-outline-clone {
+  position: absolute !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: var(--outline) !important;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  z-index: 0;
+}
+.st-outline-clone + #nameText,
+.st-outline-clone + #subText,
+.st-outline-clone + #classEn,
+.st-outline-clone + #classRuby { position: relative; z-index: 1; }
+
 /* ---------- 背景 ---------- */
 .st-bg, .st-bg > * { position: absolute; inset: 0; }
 .st-bg {
@@ -143,7 +162,7 @@
 .st-name {
   font-size: 56px;
   letter-spacing: .03em;
-  -webkit-text-stroke: calc(3px * var(--outline-scale)) var(--outline);
+  -webkit-text-stroke: 0;
   paint-order: stroke fill;
   text-shadow: 2px 5px 6px rgba(0, 0, 0, .6);
 }
@@ -152,7 +171,7 @@
   margin-right: 2px;
   font-size: 22px;
   letter-spacing: .06em;
-  -webkit-text-stroke: calc(2px * var(--outline-scale)) var(--outline);
+  -webkit-text-stroke: 0;
   paint-order: stroke fill;
   text-shadow: 1px 3px 4px rgba(0, 0, 0, .5);
 }
@@ -168,7 +187,7 @@
   font-size: 48px;
   line-height: 1.3;
   letter-spacing: .04em;
-  -webkit-text-stroke: calc(2px * var(--outline-scale)) #1d2633;
+  -webkit-text-stroke: 0;
   paint-order: stroke fill;
   text-shadow: 3px 4px 0 #1d2633, 4px 6px 8px rgba(0, 0, 0, .55);
 }
@@ -723,7 +742,7 @@
   line-height: 1;
   color: #fff;
   white-space: nowrap;
-  -webkit-text-stroke: calc(2px * var(--outline-scale)) #262626;
+  -webkit-text-stroke: 0;
   paint-order: stroke fill;
   text-shadow: 0 4px 7px rgba(0, 0, 0, .75);
 }
@@ -735,7 +754,7 @@
   font-size: 15px;
   line-height: 1;
   white-space: nowrap;
-  -webkit-text-stroke: calc(1.5px * var(--outline-scale)) #111;
+  -webkit-text-stroke: 0;
   paint-order: stroke fill;
   text-shadow: 0 2px 3px rgba(0, 0, 0, .8);
 }
