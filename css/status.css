@@ -74,7 +74,7 @@
 /* 書き出し互換の文字縁取り。
  * 通常表示はCSSで輪郭を見せ、書き出し時はSVGのstrokeを使います。
  */
-.st-outline-host { position: relative; }
+.st-outline-host { /* outline host marker; position is preserved by JS */ }
 .st-outline-svg {
   position: absolute !important;
   margin: 0 !important;
