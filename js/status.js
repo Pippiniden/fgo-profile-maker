@@ -1280,6 +1280,85 @@
     g.restore();
   }
 
+  /*
+   * 影付きの文字（本文・パラメーター・枠の見出し・透かし）も同じ理由で Canvas に描き直す。
+   * 折り返しや文字間隔をブラウザの配置どおりに再現するため、1文字ずつ実際の位置を測って描く。
+   */
+  const SHADOW_TEXT = '.st-tab, .st-detail-text, .st-param-label, .st-param-rank, .st-watermark';
+
+  // "rgba(0, 0, 0, 0.6) 1px 2px 2px, …" を [{ color, x, y, blur }] にする
+  function parseTextShadow(v) {
+    if (!v || v === 'none') return [];
+    return v.split(/,(?![^(]*\))/).map((part) => {
+      const color = (part.match(/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b|\b[a-z]+\b/i) || ['transparent'])[0];
+      const nums = (part.replace(color, '').match(/-?[\d.]+(?=px)|\b0\b/g) || []).map(parseFloat);
+      return { color, x: nums[0] || 0, y: nums[1] || 0, blur: nums[2] || 0 };
+    });
+  }
+
+  function shadowTextLayouts() {
+    const sRect = stage.getBoundingClientRect();
+    const scale = sRect.width / W || 1;
+    const groups = [];
+    const hosts = [...stage.querySelectorAll(SHADOW_TEXT)].filter((el) => el.offsetWidth && el.textContent.trim());
+    for (const host of hosts) {
+      const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        const cs = getComputedStyle(parent);
+        const chars = [];
+        const range = document.createRange();
+        let i = 0;
+        for (const ch of node.data) {
+          const len = ch.length;
+          if (ch.trim()) {
+            range.setStart(node, i);
+            range.setEnd(node, i + len);
+            // 行の折り返し位置では矩形が2つ返ることがあるので、幅のあるほうを使う
+            const r = [...range.getClientRects()].filter((x) => x.width > 0).pop();
+            if (r) chars.push({ ch, x: (r.left - sRect.left) / scale, top: (r.top - sRect.top) / scale });
+          }
+          i += len;
+        }
+        if (chars.length) {
+          groups.push({
+            chars,
+            font: `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`,
+            fill: cs.color,
+            shadows: parseTextShadow(cs.textShadow)
+          });
+        }
+      }
+    }
+    return { hosts, groups };
+  }
+
+  function drawShadowGroup(g, G, k) {
+    g.save();
+    g.setTransform(k, 0, 0, k, 0, 0);
+    g.font = G.font;
+    if ('letterSpacing' in g) g.letterSpacing = '0px';
+    g.textAlign = 'left';
+    g.textBaseline = 'alphabetic';
+    // 文字の矩形の上端 ＋ フォントのアセント ＝ ベースライン
+    const asc = g.measureText('あ').fontBoundingBoxAscent ?? g.measureText('M').actualBoundingBoxAscent;
+    const pos = G.chars.map((c) => ({ ch: c.ch, x: c.x, y: Math.round((c.top + asc) * k) / k }));
+    const FAR = 4000;
+    for (const sh of G.shadows.slice().reverse()) {
+      g.save();
+      g.shadowColor = sh.color;
+      g.shadowBlur = sh.blur * k;
+      g.shadowOffsetX = (FAR + sh.x) * k;
+      g.shadowOffsetY = sh.y * k;
+      g.fillStyle = '#000';
+      for (const p of pos) g.fillText(p.ch, p.x - FAR, p.y);
+      g.restore();
+    }
+    g.fillStyle = G.fill;
+    for (const p of pos) g.fillText(p.ch, p.x, p.y);
+    g.restore();
+  }
+
   async function snapshot(node, opts, { drawOutlinedText = false } = {}) {
     if (!window.htmlToImage) {
       throw Object.assign(new Error('no lib'), { userMessage: '書き出し用のライブラリを読み込めませんでした。ネットワーク接続を確認して、ページを再読み込みしてください。' });
@@ -1303,18 +1382,31 @@
     // 画像やフォントが反映されないことがあるため、同じ内容を繰り返し描いて最後の結果を使う
     const passes = IS_WEBKIT ? 3 : 1;
     const layouts = drawOutlinedText ? textLayouts() : [];
-    if (layouts.length && document.fonts) {
-      await Promise.all(layouts.map((L) => document.fonts.load(L.font, L.text).catch(() => null)));
+    const shadowed = drawOutlinedText ? shadowTextLayouts() : { hosts: [], groups: [] };
+    if (document.fonts) {
+      await Promise.all([
+        ...layouts.map((L) => document.fonts.load(L.font, L.text)),
+        ...shadowed.groups.map((G) => document.fonts.load(G.font, G.chars.map((c) => c.ch).join('')))
+      ].map((p) => p.catch(() => null)));
     }
     let canvas;
-    for (const L of layouts) L.el.style.visibility = 'hidden';
+    // 描き直す文字は書き出しの間だけ透明にする（枠の見出しのように背景を持つ要素もあるので、文字だけを消す）
+    const hidden = [...layouts.map((L) => L.el), ...shadowed.hosts];
+    for (const el of hidden) {
+      el.style.setProperty('color', 'transparent', 'important');
+      el.style.setProperty('text-shadow', 'none', 'important');
+    }
     try {
       for (let i = 0; i < passes; i++) canvas = await window.htmlToImage.toCanvas(node, opts);
     } finally {
-      for (const L of layouts) L.el.style.visibility = '';
+      for (const el of hidden) {
+        el.style.removeProperty('color');
+        el.style.removeProperty('text-shadow');
+      }
     }
     const k = opts.pixelRatio || 1;
     const g = canvas.getContext('2d');
+    for (const G of shadowed.groups) drawShadowGroup(g, G, k);
     for (const L of layouts) drawTextLayout(g, L, k);
 
     const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
