@@ -339,9 +339,9 @@
 
 
   /*
-   * 文字の縁取りをCanvasで直接ラスタライズする。
-   * html-to-image / WebKit がCSSのtext-strokeやtext-shadowを再現できなくても、
-   * CanvasそのものがDOM内の画像として書き出されるため、縁取りが安定して残る。
+   * 文字の縁取りは、通常表示ではCSSのtext-shadowで見せ、
+   * 書き出し時だけインラインSVGのstrokeを下敷きとして表示する。
+   * html-to-imageがCSSの文字縁取りを再現しなくても、SVG自体が画像要素として残る。
    */
   const OUTLINE_TEXTS = [
     ['nameText', 3, '#0b1633'],
@@ -351,61 +351,10 @@
     ['classRuby', 1.5, '#111']
   ];
 
-  function drawOutlineCanvas(src, canvas, width) {
-    const cs = getComputedStyle(src);
-    const w = Math.max(1, src.offsetWidth || Math.ceil(src.getBoundingClientRect().width));
-    const h = Math.max(1, src.offsetHeight || Math.ceil(src.getBoundingClientRect().height));
-    const dpr = 2;
-
-    canvas.width = Math.ceil(w * dpr);
-    canvas.height = Math.ceil(h * dpr);
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    canvas.style.left = (src.offsetLeft || 0) + 'px';
-    canvas.style.top = (src.offsetTop || 0) + 'px';
-    canvas.style.transform = cs.transform === 'none' ? 'none' : cs.transform;
-    canvas.style.transformOrigin = cs.transformOrigin;
-    canvas.style.display = 'block';
-
-    const g = canvas.getContext('2d');
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, w, h);
-    g.font = [
-      cs.fontStyle,
-      cs.fontVariant,
-      cs.fontWeight,
-      cs.fontSize,
-      cs.fontFamily
-    ].join(' ');
-    g.textBaseline = 'middle';
-    g.textAlign = 'left';
-    g.lineJoin = 'round';
-    g.miterLimit = 2;
-    g.lineWidth = Math.max(0, width * Number(state.outlineScale)) * 2;
-
-    const text = String(src.textContent || '');
-    if (!text || g.lineWidth <= 0) return;
-
-    let spacing = parseFloat(cs.letterSpacing);
-    if (!isFinite(spacing)) spacing = 0;
-
-    const chars = [...text];
-    const widths = chars.map((ch) => g.measureText(ch).width);
-    const total = widths.reduce((sum, n) => sum + n, 0) + spacing * Math.max(0, chars.length - 1);
-    const align = cs.textAlign;
-    let x = align === 'right' ? w - total : align === 'center' ? (w - total) / 2 : 0;
-    if (!isFinite(x)) x = 0;
-
-    const y = h / 2;
-    g.strokeStyle = canvas.dataset.outlineColor || '#0b1633';
-    g.beginPath();
-    for (let i = 0; i < chars.length; i++) {
-      g.strokeText(chars[i], x, y);
-      x += widths[i] + spacing;
-    }
-  }
+  const SVG_NS = 'http://www.w3.org/2000/svg';
 
   function syncTextOutlines() {
+    const scale = Number(state.outlineScale);
     for (const [id, baseWidth, color] of OUTLINE_TEXTS) {
       const src = $(id);
       if (!src) continue;
@@ -413,15 +362,57 @@
       if (!host) continue;
 
       host.classList.add('st-outline-host');
-      let canvas = host.querySelector('.st-outline-canvas');
-      if (!canvas) {
-        canvas = document.createElement('canvas');
-        canvas.className = 'st-outline-canvas';
-        canvas.setAttribute('aria-hidden', 'true');
-        canvas.dataset.outlineColor = color;
-        host.insertBefore(canvas, src);
+      let svg = host.querySelector('.st-outline-svg');
+      if (!svg) {
+        svg = document.createElementNS(SVG_NS, 'svg');
+        svg.classList.add('st-outline-svg');
+        svg.setAttribute('aria-hidden', 'true');
+        const textNode = document.createElementNS(SVG_NS, 'text');
+        textNode.classList.add('st-outline-svg-text');
+        svg.appendChild(textNode);
+        host.insertBefore(svg, src);
       }
-      drawOutlineCanvas(src, canvas, baseWidth);
+
+      const textNode = svg.querySelector('.st-outline-svg-text');
+      const cs = getComputedStyle(src);
+      const w = Math.max(1, src.offsetWidth || Math.ceil(src.getBoundingClientRect().width));
+      const h = Math.max(1, src.offsetHeight || Math.ceil(src.getBoundingClientRect().height));
+      const radius = Math.max(0, baseWidth * scale);
+      const pad = radius + 2;
+
+      svg.setAttribute('width', w + pad * 2);
+      svg.setAttribute('height', h + pad * 2);
+      svg.setAttribute('viewBox', `0 0 ${w + pad * 2} ${h + pad * 2}`);
+      svg.style.left = ((src.offsetLeft || 0) - pad) + 'px';
+      svg.style.top = ((src.offsetTop || 0) - pad) + 'px';
+      svg.style.transform = cs.transform === 'none' ? 'none' : cs.transform;
+      svg.style.transformOrigin = cs.transformOrigin;
+      svg.style.display = scale > 0 && String(src.textContent || '').trim() ? 'block' : 'none';
+
+      textNode.textContent = src.textContent || '';
+      textNode.setAttribute('x',
+        cs.textAlign === 'right' ? w + pad :
+        cs.textAlign === 'center' ? (w / 2 + pad) :
+        pad
+      );
+      textNode.setAttribute('y', h / 2 + pad);
+      textNode.setAttribute('text-anchor',
+        cs.textAlign === 'right' ? 'end' :
+        cs.textAlign === 'center' ? 'middle' : 'start'
+      );
+      textNode.setAttribute('dominant-baseline', 'middle');
+      textNode.setAttribute('fill', 'none');
+      textNode.setAttribute('stroke', color);
+      textNode.setAttribute('stroke-width', Math.max(0, radius * 2));
+      textNode.setAttribute('stroke-linejoin', 'round');
+      textNode.setAttribute('stroke-linecap', 'round');
+      textNode.setAttribute('font-family', cs.fontFamily);
+      textNode.setAttribute('font-size', cs.fontSize);
+      textNode.setAttribute('font-weight', cs.fontWeight);
+      textNode.setAttribute('font-style', cs.fontStyle);
+      textNode.setAttribute('letter-spacing', cs.letterSpacing);
+      textNode.setAttribute('xml:space', 'preserve');
+
       src.style.position = src.style.position || 'relative';
       src.style.zIndex = '1';
     }
@@ -1244,7 +1235,15 @@
       opts.skipFonts = true;
       fontsOk = false;
     }
-    const blob = await window.htmlToImage.toBlob(node, opts);
+    stage.classList.add('exporting');
+    syncTextOutlines();
+    let blob;
+    try {
+      blob = await window.htmlToImage.toBlob(node, opts);
+    } finally {
+      stage.classList.remove('exporting');
+    }
+
     if (!blob) throw new Error('toBlob failed');
     return { blob, fontsOk };
   }
