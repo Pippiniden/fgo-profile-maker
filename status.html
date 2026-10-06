@@ -100,7 +100,11 @@
       </div>
       <div class="stage-bar">
         <span class="sel-label">カード上の画像は<b>ドラッグで移動</b>・<b>ホイール／ピンチで拡大縮小</b></span>
-        <button type="button" class="btn primary" id="exportBtn">PNGで保存</button>
+        <select id="exportFormat" class="btn small" aria-label="保存形式">
+          <option value="png">PNG（高品質）</option>
+          <option value="webp">WebP（軽量・品質80%）</option>
+        </select>
+        <button type="button" class="btn primary" id="exportBtn">保存</button>
       </div>
     </section>
 
