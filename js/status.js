@@ -337,6 +337,69 @@
     img.style.opacity = f.opacity;
   }
 
+
+  /*
+   * 文字の縁取りを「実際の文字を16方向に少しずつずらして重ねる」方式で作る。
+   * html-to-image / WebKit が -webkit-text-stroke を書き出さなくても、
+   * 各レイヤーは通常の文字として描画されるため、スマホでも安定して残る。
+   */
+  const OUTLINE_TEXTS = [
+    ['nameText', 3],
+    ['subText', 2],
+    ['headText', 2],
+    ['classEn', 2],
+    ['classRuby', 1.5]
+  ];
+
+  function copyOutlineTextStyle(src, dst) {
+    const cs = getComputedStyle(src);
+    const props = [
+      'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
+      'letterSpacing', 'lineHeight', 'whiteSpace', 'textAlign',
+      'textTransform', 'wordBreak', 'wordWrap', 'writingMode',
+      'textIndent', 'textRendering', 'boxSizing', 'display'
+    ];
+    for (const p of props) dst.style[p] = cs[p];
+    dst.style.width = (src.offsetWidth || src.getBoundingClientRect().width) + 'px';
+    dst.style.height = (src.offsetHeight || src.getBoundingClientRect().height) + 'px';
+    dst.style.transformOrigin = cs.transformOrigin;
+    dst.style.transformBox = cs.transformBox;
+    dst.style.left = (src.offsetLeft || 0) + 'px';
+    dst.style.top = (src.offsetTop || 0) + 'px';
+  }
+
+  function syncTextOutlines() {
+    const scale = Number(state.outlineScale);
+    for (const [id, baseWidth] of OUTLINE_TEXTS) {
+      const src = $(id);
+      if (!src) continue;
+      const host = src.parentElement;
+      if (!host) continue;
+
+      host.classList.add('st-outline-host');
+      for (const n of [...host.querySelectorAll('.st-outline-clone')]) n.remove();
+
+      if (!(scale > 0) || !String(src.textContent || '').trim()) continue;
+
+      const radius = baseWidth * scale;
+      const copies = 16;
+      for (let i = 0; i < copies; i++) {
+        const a = (i / copies) * Math.PI * 2;
+        const clone = src.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.className = 'st-outline-clone';
+        clone.setAttribute('aria-hidden', 'true');
+        clone.textContent = src.textContent;
+        copyOutlineTextStyle(src, clone);
+        clone.style.left = ((src.offsetLeft || 0) + Math.cos(a) * radius) + 'px';
+        clone.style.top = ((src.offsetTop || 0) + Math.sin(a) * radius) + 'px';
+        clone.style.transform = getComputedStyle(src).transform;
+        clone.style.color = id === 'classEn' || id === 'classRuby' ? '#111' : getComputedStyle(host).getPropertyValue('--outline').trim() || '#0b1633';
+        host.insertBefore(clone, src);
+      }
+    }
+  }
+
   function render() {
     const s = state;
     const st = stage.style;
@@ -419,6 +482,7 @@
     magic.hidden = !s.bg.magic;
     magic.style.opacity = s.bg.magicOpacity;
 
+    syncTextOutlines();
     checkOverflow();
   }
 
