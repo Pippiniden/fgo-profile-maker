@@ -362,6 +362,7 @@
       if (!host) continue;
 
       host.classList.add('st-outline-host');
+      if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
       let svg = host.querySelector('.st-outline-svg');
       if (!svg) {
         svg = document.createElementNS(SVG_NS, 'svg');
@@ -413,8 +414,6 @@
       textNode.setAttribute('letter-spacing', cs.letterSpacing);
       textNode.setAttribute('xml:space', 'preserve');
 
-      src.style.position = src.style.position || 'relative';
-      src.style.zIndex = '1';
     }
   }
 
@@ -1237,6 +1236,7 @@
     }
     stage.classList.add('exporting');
     syncTextOutlines();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     let blob;
     try {
       blob = await window.htmlToImage.toBlob(node, opts);
