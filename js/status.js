@@ -1145,7 +1145,22 @@
     }
   }
 
+  async function reencodeWebP(blob) {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await loadImage(url);
+      const c = document.createElement('canvas');
+      c.width = W * state.exportScale;
+      c.height = H * state.exportScale;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return await new Promise((r) => c.toBlob(r, 'image/webp', 0.8));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   exportBtn.addEventListener('click', () => runExport(exportBtn, async () => {
+    const format = document.getElementById('exportFormat')?.value || 'png';
     const { blob, fontsOk } = await snapshot(stage, {
       width: W,
       height: H,
@@ -1153,7 +1168,8 @@
       style: { transform: 'none', left: '0', top: '0' },
       filter: (node) => !(node.classList && (node.classList.contains('st-art-empty') || node.hidden))
     });
-    showResult(blob, safeFileName(state.name.text, '_ステータス.png'), fontsOk);
+    const outBlob = format === 'webp' ? await reencodeWebP(blob) : blob;
+    showResult(outBlob, safeFileName(state.name.text, '_ステータス.' + (format === 'webp' ? 'webp' : 'png')), fontsOk);
   }));
 
   // 今のCSS枠を、イラスト部分を透明にした PNG で保存（自作枠の下絵用）
