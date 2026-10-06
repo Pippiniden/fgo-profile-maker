@@ -161,6 +161,15 @@ a { color: var(--accent); }
 }
 .sel-label b { color: var(--ink); }
 
+/* 保存形式の選択（ボタンの横に並べる小さなセレクト） */
+.stage-bar select {
+  width: auto;
+  flex: none;
+  padding: 4px 8px;
+  min-height: 38px;
+}
+.stage-bar .btn.primary { flex: none; white-space: nowrap; }
+
 /* ---------- buttons ---------- */
 .btn {
   appearance: none;

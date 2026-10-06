@@ -339,41 +339,46 @@
 
 
   /*
-   * html-to-image / WebKit では -webkit-text-stroke が無視されることがあるため、
-   * 書き出し時だけ drop-shadow を8方向に重ねて輪郭を作る。
+   * 文字の縁取り
+   * プレビューと書き出しで同じ見た目になるよう、縁取りは text-shadow だけで作る。
+   * 太さに合わせて方向数を増やし、太くしても角が欠けないようにする。
+   * （drop-shadow や -webkit-text-stroke は書き出し時にブラウザごとの差が大きいため使わない）
    */
-  const OUTLINE_FILTERS = [
-    ['nameText', 3, '#0b1633'],
-    ['subText', 2, '#0b1633'],
-    ['headText', 2, '#1d2633'],
-    ['classEn', 2, '#262626'],
-    ['classRuby', 1.5, '#111']
+  const OUTLINES = [
+    // [要素ID, 1倍のときの太さ(px), 縁の色, 縁の外側に付ける影]
+    ['nameText', 3, '#0b1633', '2px 5px 6px rgba(0, 0, 0, .6)'],
+    ['subText', 2, '#0b1633', '1px 3px 4px rgba(0, 0, 0, .5)'],
+    ['headText', 2, '#1d2633', '3px 4px 0 #1d2633, 4px 6px 8px rgba(0, 0, 0, .55)'],
+    ['classEn', 2, '#262626', '0 4px 7px rgba(0, 0, 0, .75)'],
+    ['classRuby', 1.5, '#111111', '0 2px 3px rgba(0, 0, 0, .8)']
   ];
 
-  function setExportOutlineFilters(enabled) {
-    const scale = Number(state.outlineScale);
-    for (const [id, baseWidth, color] of OUTLINE_FILTERS) {
-      const src = $(id);
-      if (!src) continue;
-      const target = id === 'headText' ? src : src.parentElement;
-      if (!target) continue;
-
-      if (!enabled || !(scale > 0) || !String(src.textContent || '').trim()) {
-        target.style.removeProperty('filter');
-        continue;
+  function outlineShadow(width, color, extra) {
+    const parts = [];
+    if (width > 0) {
+      const steps = width <= 2 ? 8 : width <= 4 ? 16 : 24;
+      for (let i = 0; i < steps; i++) {
+        const a = (i / steps) * Math.PI * 2;
+        const x = Math.round(Math.cos(a) * width * 100) / 100;
+        const y = Math.round(Math.sin(a) * width * 100) / 100;
+        parts.push(`${x}px ${y}px 0 ${color}`);
       }
+      // 内側も埋めて、細い線の文字でも縁が途切れないようにする
+      if (width > 1.5) {
+        const r = Math.round(width * 50) / 100;
+        parts.push(`${r}px ${r}px 0 ${color}`, `${-r}px ${r}px 0 ${color}`, `${r}px ${-r}px 0 ${color}`, `${-r}px ${-r}px 0 ${color}`);
+      }
+    }
+    if (extra) parts.push(extra);
+    return parts.join(', ');
+  }
 
-      const r = baseWidth * scale;
-      target.style.filter = [
-        `drop-shadow(${-r}px ${-r}px 0 ${color})`,
-        `drop-shadow(${r}px ${-r}px 0 ${color})`,
-        `drop-shadow(${-r}px ${r}px 0 ${color})`,
-        `drop-shadow(${r}px ${r}px 0 ${color})`,
-        `drop-shadow(0 ${-r}px 0 ${color})`,
-        `drop-shadow(0 ${r}px 0 ${color})`,
-        `drop-shadow(${-r}px 0 0 ${color})`,
-        `drop-shadow(${r}px 0 0 ${color})`
-      ].join(' ');
+  function applyOutlines() {
+    const scale = Math.max(0, Number(state.outlineScale) || 0);
+    for (const [id, base, color, extra] of OUTLINES) {
+      const el = $(id);
+      const target = id === 'headText' ? el : el.parentElement;
+      target.style.textShadow = outlineShadow(base * scale, color, extra);
     }
   }
 
@@ -387,7 +392,6 @@
     st.setProperty('--art-top', s.card.artTop);
     st.setProperty('--art-bottom', s.card.artBottom);
     st.setProperty('--panel-alpha', s.bg.panelAlpha);
-    st.setProperty('--outline-scale', s.outlineScale);
     const pal = currentPalette();
     for (const k of ['hi', 'light', 'mid', 'dark', 'edge']) st.setProperty('--frame-' + k, pal[k]);
     st.setProperty('--navy-light', mix(s.card.band, '#ffffff', 0.16));
@@ -446,6 +450,7 @@
     if (assets.icon && iconImg.getAttribute('src') !== assets.icon.url) iconImg.src = assets.icon.url;
     icon.classList.toggle('has-img', !!assets.icon);
 
+    applyOutlines();
     renderArt();
 
     // 透かし（常に表示・編集不可）
@@ -1174,6 +1179,12 @@
     await Promise.all(imgs.map(waitForImageDecode));
   }
 
+  const IS_WEBKIT = (() => {
+    const ua = navigator.userAgent || '';
+    const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    return ios || (/AppleWebKit/.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Android/.test(ua));
+  })();
+
   async function snapshot(node, opts) {
     if (!window.htmlToImage) {
       throw Object.assign(new Error('no lib'), { userMessage: '書き出し用のライブラリを読み込めませんでした。ネットワーク接続を確認して、ページを再読み込みしてください。' });
@@ -1193,16 +1204,11 @@
       opts.skipFonts = true;
       fontsOk = false;
     }
-    stage.classList.add('exporting');
-    setExportOutlineFilters(true);
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // Safari（iPhone/iPad のブラウザはすべて Safari と同じ仕組み）は、1回目の書き出しで
+    // 画像やフォントが反映されないことがあるため、同じ内容を繰り返し描いて最後の結果を使う
+    const passes = IS_WEBKIT ? 3 : 1;
     let blob;
-    try {
-      blob = await window.htmlToImage.toBlob(node, opts);
-    } finally {
-      setExportOutlineFilters(false);
-      stage.classList.remove('exporting');
-    }
+    for (let i = 0; i < passes; i++) blob = await window.htmlToImage.toBlob(node, opts);
 
     if (!blob) throw new Error('toBlob failed');
     return { blob, fontsOk };
@@ -1214,7 +1220,11 @@
     exportImg.src = lastUrl;
     downloadLink.href = lastUrl;
     downloadLink.download = fileName;
-    exportNote.hidden = fontsOk;
+    const notes = [];
+    if (!fontsOk) notes.push('フォントを取得できなかったため、お使いの端末のフォントで書き出しました。通信環境を確認してもう一度お試しください。');
+    if (webpFallback) notes.push('このブラウザは WebP で保存できないため、PNG で保存しました。');
+    exportNote.textContent = notes.join('\n');
+    exportNote.hidden = !notes.length;
     modal.hidden = false;
     downloadLink.focus();
   }
@@ -1248,7 +1258,9 @@
     }
   }
 
+  let webpFallback = false;
   exportBtn.addEventListener('click', () => runExport(exportBtn, async () => {
+    webpFallback = false;
     const format = document.getElementById('exportFormat')?.value || 'png';
     const { blob, fontsOk } = await snapshot(stage, {
       width: W,
@@ -1257,8 +1269,15 @@
       style: { transform: 'none', left: '0', top: '0' },
       filter: (node) => !(node.classList && (node.classList.contains('st-art-empty') || node.hidden))
     });
-    const outBlob = format === 'webp' ? await reencodeWebP(blob) : blob;
-    showResult(outBlob, safeFileName(state.name.text, '_ステータス.' + (format === 'webp' ? 'webp' : 'png')), fontsOk);
+    let outBlob = blob;
+    let ext = 'png';
+    if (format === 'webp') {
+      const webp = await reencodeWebP(blob);
+      // WebP に書き出せないブラウザ（古い Safari など）は PNG のまま保存する
+      if (webp && webp.type === 'image/webp') { outBlob = webp; ext = 'webp'; }
+      else webpFallback = true;
+    }
+    showResult(outBlob, safeFileName(state.name.text, '_ステータス.' + ext), fontsOk);
   }));
 
   // 今のCSS枠を、イラスト部分を透明にした PNG で保存（自作枠の下絵用）

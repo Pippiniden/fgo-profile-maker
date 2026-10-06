@@ -1487,13 +1487,16 @@
       drawScene(out.getContext('2d'), false);
       const format = document.getElementById('exportFormat')?.value || 'png';
       const mime = format === 'webp' ? 'image/webp' : 'image/png';
-      const blob = await new Promise((res) => out.toBlob(res, mime, format === 'webp' ? 0.8 : undefined));
+      let blob = await new Promise((res) => out.toBlob(res, mime, format === 'webp' ? 0.8 : undefined));
+      // WebP に書き出せないブラウザ（古い Safari など）は PNG になるので、拡張子も合わせる
+      const ext = blob && blob.type === 'image/webp' ? 'webp' : 'png';
+      if (format === 'webp' && ext !== 'webp') alert('このブラウザは WebP で保存できないため、PNG で保存します。');
       if (!blob) throw new Error('toBlob failed');
       if (lastUrl) URL.revokeObjectURL(lastUrl);
       lastUrl = URL.createObjectURL(blob);
       exportImg.src = lastUrl;
       downloadLink.href = lastUrl;
-      downloadLink.download = safeFileName(state.name.text.split('\n')[0], format === 'webp' ? 'webp' : 'png');
+      downloadLink.download = safeFileName(state.name.text.split('\n')[0], ext);
       modal.hidden = false;
       downloadLink.focus();
     } catch (err) {
