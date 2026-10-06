@@ -347,7 +347,7 @@
     st.setProperty('--art-top', s.card.artTop);
     st.setProperty('--art-bottom', s.card.artBottom);
     st.setProperty('--panel-alpha', s.bg.panelAlpha);
-    st.style.setProperty('--outline-scale', s.outlineScale);
+    st.setProperty('--outline-scale', s.outlineScale);
     const pal = currentPalette();
     for (const k of ['hi', 'light', 'mid', 'dark', 'edge']) st.setProperty('--frame-' + k, pal[k]);
     st.setProperty('--navy-light', mix(s.card.band, '#ffffff', 0.16));
