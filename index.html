@@ -34,7 +34,11 @@
       <div class="stage-bar">
         <span class="sel-label" id="selLabel">要素をタップすると選択できます</span>
         <button type="button" class="btn small ghost" id="deselectBtn" hidden>選択解除</button>
-        <button type="button" class="btn primary" id="exportBtn">PNGで保存</button>
+        <select id="exportFormat" class="btn small" aria-label="保存形式">
+          <option value="png">PNG（高品質）</option>
+          <option value="webp">WebP（軽量・品質80%）</option>
+        </select>
+        <button type="button" class="btn primary" id="exportBtn">保存</button>
       </div>
     </section>
 
