@@ -123,6 +123,7 @@
     name: { text: 'アンドラス・アントロポス', size: 52 },
     sub: { text: 'セイバー', size: 27 },
     heading: { text: 'プロフィール', size: 44 },
+    outlineScale: 1,
     fonts: {
       name: { font: 'Zen Old Mincho', weight: 700 },
       sub: { font: 'Zen Old Mincho', weight: 700 },
@@ -346,6 +347,7 @@
     st.setProperty('--art-top', s.card.artTop);
     st.setProperty('--art-bottom', s.card.artBottom);
     st.setProperty('--panel-alpha', s.bg.panelAlpha);
+    st.style.setProperty('--outline-scale', s.outlineScale);
     const pal = currentPalette();
     for (const k of ['hi', 'light', 'mid', 'dark', 'edge']) st.setProperty('--frame-' + k, pal[k]);
     st.setProperty('--navy-light', mix(s.card.band, '#ffffff', 0.16));
@@ -630,6 +632,11 @@
           fontField('heading'),
           rangeField('文字サイズ', ['heading', 'size'], 24, 72, 1, 'px')
         ])
+      ]),
+      adv('詳細設定：文字の縁取り', [
+        rangeField('縁取りの太さ', ['outlineScale'], 0, 2, 0.05, '倍'),
+        h('div', { class: 'note', text: '現在の見た目を1.00倍として、全体の縁取りをまとめて調整します。0にすると縁取りなしになります。' }),
+        resetButton('縁取りを初期値に戻す', [['outlineScale']])
       ])
     ], true));
 
