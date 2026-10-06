@@ -339,67 +339,91 @@
 
 
   /*
-   * 文字の縁取りを「実際の文字を16方向に少しずつずらして重ねる」方式で作る。
-   * html-to-image / WebKit が -webkit-text-stroke を書き出さなくても、
-   * 各レイヤーは通常の文字として描画されるため、スマホでも安定して残る。
+   * 文字の縁取りをCanvasで直接ラスタライズする。
+   * html-to-image / WebKit がCSSのtext-strokeやtext-shadowを再現できなくても、
+   * CanvasそのものがDOM内の画像として書き出されるため、縁取りが安定して残る。
    */
   const OUTLINE_TEXTS = [
-    ['nameText', 3],
-    ['subText', 2],
-    ['headText', 2],
-    ['classEn', 2],
-    ['classRuby', 1.5]
+    ['nameText', 3, '#0b1633'],
+    ['subText', 2, '#0b1633'],
+    ['headText', 2, '#1d2633'],
+    ['classEn', 2, '#262626'],
+    ['classRuby', 1.5, '#111']
   ];
 
-  function copyOutlineTextStyle(src, dst) {
+  function drawOutlineCanvas(src, canvas, width) {
     const cs = getComputedStyle(src);
-    const props = [
-      'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
-      'letterSpacing', 'lineHeight', 'whiteSpace', 'textAlign',
-      'textTransform', 'wordBreak', 'wordWrap', 'writingMode',
-      'textIndent', 'textRendering', 'boxSizing', 'display'
-    ];
-    for (const p of props) dst.style[p] = cs[p];
-    dst.style.width = (src.offsetWidth || src.getBoundingClientRect().width) + 'px';
-    dst.style.height = (src.offsetHeight || src.getBoundingClientRect().height) + 'px';
-    dst.style.transformOrigin = cs.transformOrigin;
-    dst.style.transformBox = cs.transformBox;
-    dst.style.left = (src.offsetLeft || 0) + 'px';
-    dst.style.top = (src.offsetTop || 0) + 'px';
+    const w = Math.max(1, src.offsetWidth || Math.ceil(src.getBoundingClientRect().width));
+    const h = Math.max(1, src.offsetHeight || Math.ceil(src.getBoundingClientRect().height));
+    const dpr = 2;
+
+    canvas.width = Math.ceil(w * dpr);
+    canvas.height = Math.ceil(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.style.left = (src.offsetLeft || 0) + 'px';
+    canvas.style.top = (src.offsetTop || 0) + 'px';
+    canvas.style.transform = cs.transform === 'none' ? 'none' : cs.transform;
+    canvas.style.transformOrigin = cs.transformOrigin;
+    canvas.style.display = 'block';
+
+    const g = canvas.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    g.font = [
+      cs.fontStyle,
+      cs.fontVariant,
+      cs.fontWeight,
+      cs.fontSize,
+      cs.fontFamily
+    ].join(' ');
+    g.textBaseline = 'middle';
+    g.textAlign = 'left';
+    g.lineJoin = 'round';
+    g.miterLimit = 2;
+    g.lineWidth = Math.max(0, width * Number(state.outlineScale)) * 2;
+
+    const text = String(src.textContent || '');
+    if (!text || g.lineWidth <= 0) return;
+
+    let spacing = parseFloat(cs.letterSpacing);
+    if (!isFinite(spacing)) spacing = 0;
+
+    const chars = [...text];
+    const widths = chars.map((ch) => g.measureText(ch).width);
+    const total = widths.reduce((sum, n) => sum + n, 0) + spacing * Math.max(0, chars.length - 1);
+    const align = cs.textAlign;
+    let x = align === 'right' ? w - total : align === 'center' ? (w - total) / 2 : 0;
+    if (!isFinite(x)) x = 0;
+
+    const y = h / 2;
+    g.strokeStyle = canvas.dataset.outlineColor || '#0b1633';
+    g.beginPath();
+    for (let i = 0; i < chars.length; i++) {
+      g.strokeText(chars[i], x, y);
+      x += widths[i] + spacing;
+    }
   }
 
   function syncTextOutlines() {
-    const scale = Number(state.outlineScale);
-    for (const [id, baseWidth] of OUTLINE_TEXTS) {
+    for (const [id, baseWidth, color] of OUTLINE_TEXTS) {
       const src = $(id);
       if (!src) continue;
       const host = src.parentElement;
-      // 元の文字を常に縁取りレイヤーより前面にする。
-      src.style.position = src.style.position || 'relative';
-      src.style.zIndex = '1';
       if (!host) continue;
 
       host.classList.add('st-outline-host');
-      for (const n of [...host.querySelectorAll('.st-outline-clone')]) n.remove();
-
-      if (!(scale > 0) || !String(src.textContent || '').trim()) continue;
-
-      const radius = baseWidth * scale;
-      const copies = 16;
-      for (let i = 0; i < copies; i++) {
-        const a = (i / copies) * Math.PI * 2;
-        const clone = src.cloneNode(true);
-        clone.removeAttribute('id');
-        clone.className = 'st-outline-clone';
-        clone.setAttribute('aria-hidden', 'true');
-        clone.textContent = src.textContent;
-        copyOutlineTextStyle(src, clone);
-        clone.style.left = ((src.offsetLeft || 0) + Math.cos(a) * radius) + 'px';
-        clone.style.top = ((src.offsetTop || 0) + Math.sin(a) * radius) + 'px';
-        clone.style.transform = getComputedStyle(src).transform;
-        clone.style.color = id === 'classEn' || id === 'classRuby' ? '#111' : getComputedStyle(host).getPropertyValue('--outline').trim() || '#0b1633';
-        host.insertBefore(clone, src);
+      let canvas = host.querySelector('.st-outline-canvas');
+      if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.className = 'st-outline-canvas';
+        canvas.setAttribute('aria-hidden', 'true');
+        canvas.dataset.outlineColor = color;
+        host.insertBefore(canvas, src);
       }
+      drawOutlineCanvas(src, canvas, baseWidth);
+      src.style.position = src.style.position || 'relative';
+      src.style.zIndex = '1';
     }
   }
 
