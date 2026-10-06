@@ -1471,9 +1471,9 @@
   const downloadLink = document.getElementById('downloadLink');
   let lastUrl = null;
 
-  function safeFileName(s) {
+  function safeFileName(s, ext) {
     const base = String(s || '').replace(/\s+/g, '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').slice(0, 40);
-    return (base || 'character') + '_紹介.png';
+    return (base || 'character') + '_紹介.' + ext;
   }
 
   exportBtn.addEventListener('click', async () => {
@@ -1485,13 +1485,15 @@
       const out = document.createElement('canvas');
       out.width = out.height = SIZE;
       drawScene(out.getContext('2d'), false);
-      const blob = await new Promise((res) => out.toBlob(res, 'image/png'));
+      const format = document.getElementById('exportFormat')?.value || 'png';
+      const mime = format === 'webp' ? 'image/webp' : 'image/png';
+      const blob = await new Promise((res) => out.toBlob(res, mime, format === 'webp' ? 0.8 : undefined));
       if (!blob) throw new Error('toBlob failed');
       if (lastUrl) URL.revokeObjectURL(lastUrl);
       lastUrl = URL.createObjectURL(blob);
       exportImg.src = lastUrl;
       downloadLink.href = lastUrl;
-      downloadLink.download = safeFileName(state.name.text.split('\n')[0]);
+      downloadLink.download = safeFileName(state.name.text.split('\n')[0], format === 'webp' ? 'webp' : 'png');
       modal.hidden = false;
       downloadLink.focus();
     } catch (err) {
