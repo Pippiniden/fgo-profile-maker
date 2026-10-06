@@ -9,6 +9,8 @@
   const W = 1280, H = 720;
   const CARD_RECT = { x: 8, y: 6, w: 424, h: 708 };
   const STORE_KEY = 'fgoStatusMaker.v3';
+  const WATERMARK = 'FGO風ステータス画面メーカー';
+  const WATERMARK_FONT = { font: 'Zen Kaku Gothic New', weight: 500 };
 
   const stage = document.getElementById('statusStage');
   const wrap = document.getElementById('stageWrap');
@@ -77,7 +79,7 @@
     ['param', 'パラメーターの項目名'],
     ['rank', 'ランク'],
     ['classEn', 'カードのクラス名（英字）'],
-    ['classRuby', 'カードのクラス名の読み']
+    ['classRuby', 'カードのクラス名の下の文字']
   ];
   const partLabel = (p) => (FONT_PARTS.find((x) => x[0] === p) || [p, p])[1];
 
@@ -118,8 +120,8 @@
    * ------------------------------------------------------------------ */
   const ZK = 'Zen Kaku Gothic New';
   const DEFAULTS = {
-    name: { text: 'アステリア', size: 52 },
-    sub: { text: 'キャスター', size: 27 },
+    name: { text: 'アグノストス', size: 52 },
+    sub: { text: 'セイバー', size: 27 },
     heading: { text: 'プロフィール', size: 44 },
     fonts: {
       name: { font: 'Zen Old Mincho', weight: 700 },
@@ -134,34 +136,34 @@
     },
     detail: {
       tab: 'キャラクター詳細',
-      text: '星の巡りを読み解く、辺境の天文魔術師。\n幼い頃に見た流星の行方を追い続け、\nやがて「星の書」と呼ばれる魔導書を手にした。\n穏やかで人当たりは良いが、\n夜空の話になると止まらなくなる一面も。\nその瞳には、まだ誰も知らない星図が映っている。',
+      text: 'ホメロスの叙事詩にただ一行だけ現れる、影の英雄。\nトロイアの戦場で数多の英雄の背後に立ち、\nその武勲はすべて他者の名で語り継がれた。\n「名も無き者（アグノストス）」と呼ばれるのは、\n詩人たちが彼の真名を歌い忘れたためである。\n語られぬ英雄譚こそが、その剣を研ぎ澄ます。',
       size: 24,
       lineHeight: 34
     },
     params: {
       tab: 'パラメーター',
       items: [
-        { label: '筋力', rank: 'D', mod: '' },
+        { label: '筋力', rank: 'B', mod: '' },
         { label: '耐久', rank: 'C', mod: '' },
-        { label: '敏捷', rank: 'B', mod: '' },
-        { label: '魔力', rank: 'A', mod: '+' },
-        { label: '幸運', rank: 'A', mod: '' },
-        { label: '宝具', rank: 'EX', mod: '' }
+        { label: '敏捷', rank: 'A', mod: '+' },
+        { label: '魔力', rank: 'D', mod: '' },
+        { label: '幸運', rank: 'E', mod: '' },
+        { label: '宝具', rank: 'A', mod: '' }
       ]
     },
     card: {
-      stars: 5,
+      stars: 4,
       frame: 'auto',
       metal: '#e0b24a',
       band: '#173677',
       useCustomFrame: true,
       pedestal: false,
-      classEn: 'Caster',
+      classEn: 'Saber',
       classSize: 43,
       classSpacing: 0,
       classX: 0,
       classY: 0,
-      classRuby: 'キャスター',
+      classRuby: 'アグノストス',
       rubySize: 19,
       rubySpacing: -0.07,
       rubyX: 0,
@@ -403,6 +405,13 @@
     icon.classList.toggle('has-img', !!assets.icon);
 
     renderArt();
+
+    // 透かし（常に表示・編集不可）
+    const wm = $('watermark');
+    wm.textContent = WATERMARK;
+    wm.style.fontFamily = `"${WATERMARK_FONT.font}", ${FALLBACK_FONT}`;
+    wm.style.fontWeight = WATERMARK_FONT.weight;
+    if (document.fonts) document.fonts.load(`${WATERMARK_FONT.weight} 15px "${WATERMARK_FONT.font}"`, WATERMARK).catch(() => {});
 
     const magic = $('bgMagic');
     magic.hidden = !s.bg.magic;
@@ -691,7 +700,7 @@
       ]),
       block('クラス表記（カード下部）', [
         textField('クラス名（英字）', ['card', 'classEn']),
-        textField('クラス名の読み', ['card', 'classRuby']),
+        textField('クラス名の下の小さな文字（真名など）', ['card', 'classRuby']),
         h('div', { class: 'row' }, h('span', { class: 'label', text: 'クラスアイコン' }),
           h('div', { class: 'btn-row' }, iconBtn, iconInput, status.iconClear, status.iconName),
           h('div', { class: 'note', text: '同梱していません。ご自身で用意した画像（透過PNG推奨）を使ってください。' })),
@@ -704,7 +713,7 @@
             rangeField('上下の位置', ['card', 'classY'], -300, 120, 1, 'px')),
           resetButton('位置とサイズを戻す', [['card', 'classSize'], ['card', 'classSpacing'], ['card', 'classX'], ['card', 'classY']])
         ]),
-        adv('詳細設定：クラス名の読み', [
+        adv('詳細設定：クラス名の下の小さな文字', [
           fontField('classRuby'),
           rangeField('文字サイズ', ['card', 'rubySize'], 8, 40, 1, 'px'),
           rangeField('文字の間隔', ['card', 'rubySpacing'], -0.1, 0.5, 0.01, 'em'),
@@ -1055,6 +1064,8 @@
       if (!want.has(f.font)) want.set(f.font, new Set());
       want.get(f.font).add(f.weight);
     }
+    if (!want.has(WATERMARK_FONT.font)) want.set(WATERMARK_FONT.font, new Set());
+    want.get(WATERMARK_FONT.font).add(WATERMARK_FONT.weight);
     return [...want].map(([family, ws]) => [family, [...ws].sort((a, b) => a - b)]);
   }
 
@@ -1157,7 +1168,7 @@
       card.classList.add('template');
       try {
         const hideCls = ['st-bg', 'st-glow-line', 'st-title', 'st-heading', 'st-panel', 'st-art',
-          'st-class-en', 'st-class-ruby', 'st-icon-img', 'st-stars', 'st-frame-img'];
+          'st-class-en', 'st-class-ruby', 'st-icon-img', 'st-stars', 'st-frame-img', 'st-watermark'];
         const k = 2;
         const { blob, fontsOk } = await snapshot(stage, {
           width: W,
