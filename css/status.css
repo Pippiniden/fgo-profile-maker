@@ -71,25 +71,17 @@
 }
 .st-stage * { box-sizing: border-box; }
 
-/* 書き出し互換の文字縁取り。CSS text-stroke に頼らず、JSで実文字を多方向に重ねます。 */
+/* 書き出し互換の文字縁取り。Canvasで縁取りだけを別レイヤーとして描画します。 */
 .st-outline-host { position: relative; }
-.st-outline-clone {
+.st-outline-canvas {
   position: absolute !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
-  color: var(--outline) !important;
-  -webkit-text-stroke: 0 !important;
-  text-shadow: none !important;
   pointer-events: none !important;
   user-select: none !important;
   z-index: 0;
 }
-.st-outline-clone + #nameText,
-.st-outline-clone + #subText,
-.st-outline-clone + #classEn,
-.st-outline-clone + #classRuby { position: relative; z-index: 1; }
-
 /* ---------- 背景 ---------- */
 .st-bg, .st-bg > * { position: absolute; inset: 0; }
 .st-bg {
