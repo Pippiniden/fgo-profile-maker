@@ -339,11 +339,10 @@
 
 
   /*
-   * 文字の縁取りは、通常表示ではCSSのtext-shadowで見せ、
-   * 書き出し時だけインラインSVGのstrokeを下敷きとして表示する。
-   * html-to-imageがCSSの文字縁取りを再現しなくても、SVG自体が画像要素として残る。
+   * html-to-image / WebKit では -webkit-text-stroke が無視されることがあるため、
+   * 書き出し時だけ drop-shadow を8方向に重ねて輪郭を作る。
    */
-  const OUTLINE_TEXTS = [
+  const OUTLINE_FILTERS = [
     ['nameText', 3, '#0b1633'],
     ['subText', 2, '#0b1633'],
     ['headText', 2, '#1d2633'],
@@ -351,69 +350,30 @@
     ['classRuby', 1.5, '#111']
   ];
 
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-
-  function syncTextOutlines() {
+  function setExportOutlineFilters(enabled) {
     const scale = Number(state.outlineScale);
-    for (const [id, baseWidth, color] of OUTLINE_TEXTS) {
+    for (const [id, baseWidth, color] of OUTLINE_FILTERS) {
       const src = $(id);
       if (!src) continue;
-      const host = src.parentElement;
-      if (!host) continue;
+      const target = id === 'headText' ? src : src.parentElement;
+      if (!target) continue;
 
-      host.classList.add('st-outline-host');
-      if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
-      let svg = host.querySelector('.st-outline-svg');
-      if (!svg) {
-        svg = document.createElementNS(SVG_NS, 'svg');
-        svg.classList.add('st-outline-svg');
-        svg.setAttribute('aria-hidden', 'true');
-        const textNode = document.createElementNS(SVG_NS, 'text');
-        textNode.classList.add('st-outline-svg-text');
-        svg.appendChild(textNode);
-        host.insertBefore(svg, src);
+      if (!enabled || !(scale > 0) || !String(src.textContent || '').trim()) {
+        target.style.removeProperty('filter');
+        continue;
       }
 
-      const textNode = svg.querySelector('.st-outline-svg-text');
-      const cs = getComputedStyle(src);
-      const w = Math.max(1, src.offsetWidth || Math.ceil(src.getBoundingClientRect().width));
-      const h = Math.max(1, src.offsetHeight || Math.ceil(src.getBoundingClientRect().height));
-      const radius = Math.max(0, baseWidth * scale);
-      const pad = radius + 2;
-
-      svg.setAttribute('width', w + pad * 2);
-      svg.setAttribute('height', h + pad * 2);
-      svg.setAttribute('viewBox', `0 0 ${w + pad * 2} ${h + pad * 2}`);
-      svg.style.left = ((src.offsetLeft || 0) - pad) + 'px';
-      svg.style.top = ((src.offsetTop || 0) - pad) + 'px';
-      svg.style.transform = cs.transform === 'none' ? 'none' : cs.transform;
-      svg.style.transformOrigin = cs.transformOrigin;
-      svg.style.display = scale > 0 && String(src.textContent || '').trim() ? 'block' : 'none';
-
-      textNode.textContent = src.textContent || '';
-      textNode.setAttribute('x',
-        cs.textAlign === 'right' ? w + pad :
-        cs.textAlign === 'center' ? (w / 2 + pad) :
-        pad
-      );
-      textNode.setAttribute('y', h / 2 + pad);
-      textNode.setAttribute('text-anchor',
-        cs.textAlign === 'right' ? 'end' :
-        cs.textAlign === 'center' ? 'middle' : 'start'
-      );
-      textNode.setAttribute('dominant-baseline', 'middle');
-      textNode.setAttribute('fill', 'none');
-      textNode.setAttribute('stroke', color);
-      textNode.setAttribute('stroke-width', Math.max(0, radius * 2));
-      textNode.setAttribute('stroke-linejoin', 'round');
-      textNode.setAttribute('stroke-linecap', 'round');
-      textNode.setAttribute('font-family', cs.fontFamily);
-      textNode.setAttribute('font-size', cs.fontSize);
-      textNode.setAttribute('font-weight', cs.fontWeight);
-      textNode.setAttribute('font-style', cs.fontStyle);
-      textNode.setAttribute('letter-spacing', cs.letterSpacing);
-      textNode.setAttribute('xml:space', 'preserve');
-
+      const r = baseWidth * scale;
+      target.style.filter = [
+        `drop-shadow(${-r}px ${-r}px 0 ${color})`,
+        `drop-shadow(${r}px ${-r}px 0 ${color})`,
+        `drop-shadow(${-r}px ${r}px 0 ${color})`,
+        `drop-shadow(${r}px ${r}px 0 ${color})`,
+        `drop-shadow(0 ${-r}px 0 ${color})`,
+        `drop-shadow(0 ${r}px 0 ${color})`,
+        `drop-shadow(${-r}px 0 0 ${color})`,
+        `drop-shadow(${r}px 0 0 ${color})`
+      ].join(' ');
     }
   }
 
@@ -499,7 +459,6 @@
     magic.hidden = !s.bg.magic;
     magic.style.opacity = s.bg.magicOpacity;
 
-    syncTextOutlines();
     checkOverflow();
   }
 
@@ -1235,12 +1194,13 @@
       fontsOk = false;
     }
     stage.classList.add('exporting');
-    syncTextOutlines();
+    setExportOutlineFilters(true);
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     let blob;
     try {
       blob = await window.htmlToImage.toBlob(node, opts);
     } finally {
+      setExportOutlineFilters(false);
       stage.classList.remove('exporting');
     }
 
