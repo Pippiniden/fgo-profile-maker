@@ -118,24 +118,24 @@
    * ------------------------------------------------------------------ */
   const ZK = 'Zen Kaku Gothic New';
   const DEFAULTS = {
-    name: { text: 'アステリア', size: 58 },
-    sub: { text: 'キャスター', size: 22 },
-    heading: { text: 'プロフィール', size: 48 },
+    name: { text: 'アステリア', size: 52 },
+    sub: { text: 'キャスター', size: 27 },
+    heading: { text: 'プロフィール', size: 44 },
     fonts: {
-      name: { font: ZK, weight: 900 },
-      sub: { font: ZK, weight: 900 },
-      heading: { font: ZK, weight: 900 },
-      tab: { font: ZK, weight: 700 },
-      detail: { font: ZK, weight: 700 },
-      param: { font: ZK, weight: 700 },
-      rank: { font: ZK, weight: 700 },
-      classEn: { font: 'Cormorant Garamond', weight: 700 },
-      classRuby: { font: ZK, weight: 700 }
+      name: { font: 'Zen Old Mincho', weight: 700 },
+      sub: { font: 'Zen Old Mincho', weight: 700 },
+      heading: { font: 'Zen Old Mincho', weight: 700 },
+      tab: { font: 'Noto Serif JP', weight: 700 },
+      detail: { font: 'Sawarabi Gothic', weight: 400 },
+      param: { font: 'Sawarabi Gothic', weight: 400 },
+      rank: { font: 'Playfair Display', weight: 500 },
+      classEn: { font: 'Libre Baskerville', weight: 400 },
+      classRuby: { font: ZK, weight: 500 }
     },
     detail: {
       tab: 'キャラクター詳細',
       text: '星の巡りを読み解く、辺境の天文魔術師。\n幼い頃に見た流星の行方を追い続け、\nやがて「星の書」と呼ばれる魔導書を手にした。\n穏やかで人当たりは良いが、\n夜空の話になると止まらなくなる一面も。\nその瞳には、まだ誰も知らない星図が映っている。',
-      size: 26,
+      size: 24,
       lineHeight: 34
     },
     params: {
@@ -157,13 +157,13 @@
       useCustomFrame: true,
       pedestal: false,
       classEn: 'Caster',
-      classSize: 54,
+      classSize: 43,
       classSpacing: 0,
       classX: 0,
       classY: 0,
       classRuby: 'キャスター',
-      rubySize: 15,
-      rubySpacing: 0,
+      rubySize: 19,
+      rubySpacing: -0.07,
       rubyX: 0,
       rubyY: 0,
       iconX: 0,

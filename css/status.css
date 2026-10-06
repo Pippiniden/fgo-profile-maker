@@ -350,6 +350,7 @@
 }
 .st-card-inner {
   position: absolute;
+  isolation: isolate;
   inset: var(--ring);
   overflow: hidden;
   border-radius: 3px;
@@ -630,6 +631,7 @@
 /* ---------- 枠の上に重ねる要素（星・アイコン・クラス名） ---------- */
 .st-card-over {
   position: absolute;
+  z-index: 10;
   inset: var(--ring);
   pointer-events: none;
 }
