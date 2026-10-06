@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FGO風ステータス画面メーカー</title>
+  <meta name="description" content="自作イラストを入れて、FGO風のプロフィール（ステータス）画面画像（1280×720 PNG）を作れる非公式ファンメイドツールです。画像はブラウザ内だけで処理されます。">
+  <meta property="og:title" content="FGO風ステータス画面メーカー">
+  <meta property="og:description" content="自作イラストでFGO風のプロフィール画面を作れる非公式ファンメイドツール">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#2a2118">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+1p:wght@500;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Old+Mincho:wght@500;700;900&family=Dela+Gothic+One&family=Cormorant+Garamond:wght@600;700&family=Cinzel:wght@600;700&family=Marcellus&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/status.css">
+</head>
+<body>
+  <header class="app-header">
+    <nav class="tool-nav" aria-label="ツール切り替え">
+      <a href="index.html">キャラ紹介（1024×1024）</a>
+      <a href="status.html" aria-current="page">ステータス画面（1280×720）</a>
+    </nav>
+    <h1>FGO風ステータス画面メーカー</h1>
+    <p class="lead">自作イラストを入れて、プロフィール画面風の画像（1280×720 PNG）を作るファンメイドツールです。<br class="pc-only">画像はすべてお使いのブラウザ内で処理され、どこにも送信されません。</p>
+  </header>
+
+  <main class="layout status-layout">
+    <section class="preview-pane" aria-label="プレビュー">
+      <div class="canvas-wrap wide" id="stageWrap">
+        <!-- 実寸 1280×720 で組み、表示サイズに合わせて縮小表示します -->
+        <div class="st-stage" id="statusStage">
+          <div class="st-bg" aria-hidden="true">
+            <div class="st-bg-beams"></div>
+            <div class="st-bg-grid"></div>
+            <img class="st-bg-magic" id="bgMagic" src="assets/magic-circle.png" alt="">
+            <div class="st-bg-shade"></div>
+          </div>
+
+          <!-- 左：キャラクターカード -->
+          <div class="st-card" id="card">
+            <div class="st-card-inner">
+              <div class="st-art" id="art">
+                <div class="st-art-bg" id="artBg"></div>
+                <img class="st-art-img" id="artImg" alt="" hidden>
+                <div class="st-art-empty" id="artEmpty">
+                  <span>キャラ画像を<br>ドロップ／選択</span>
+                </div>
+              </div>
+
+              <div class="st-card-top" aria-hidden="true">
+                <div class="st-crown"><div class="st-stars" id="stars"></div></div>
+              </div>
+              <div class="st-corner tl" aria-hidden="true"><i></i></div>
+              <div class="st-corner tr" aria-hidden="true"><i></i></div>
+
+              <div class="st-card-bottom">
+                <div class="st-spear left" aria-hidden="true"></div>
+                <div class="st-spear right" aria-hidden="true"></div>
+                <div class="st-corner bl" aria-hidden="true"></div>
+                <div class="st-corner br" aria-hidden="true"></div>
+                <div class="st-icon">
+                  <div class="st-icon-frame" aria-hidden="true"></div>
+                  <img class="st-icon-img" id="iconImg" alt="" hidden>
+                </div>
+              </div>
+              <div class="st-class-en" id="classEn"></div>
+              <div class="st-class-ruby" id="classRuby"></div>
+            </div>
+          </div>
+          <div class="st-chevron" aria-hidden="true"></div>
+
+          <!-- 右：プロフィール -->
+          <div class="st-glow-line" aria-hidden="true"></div>
+          <div class="st-name" id="nameText"></div>
+          <div class="st-subname" id="subText"></div>
+          <div class="st-heading" id="headText"></div>
+
+          <section class="st-panel st-detail" id="detailPanel">
+            <div class="st-tab" id="detailTab"></div>
+            <div class="st-box"><div class="st-detail-text" id="detailText"></div></div>
+          </section>
+
+          <section class="st-panel st-params" id="paramPanel">
+            <div class="st-tab" id="paramTab"></div>
+            <div class="st-box"><div class="st-param-grid" id="paramGrid"></div></div>
+          </section>
+        </div>
+        <div class="drop-overlay" id="dropOverlay">ここに画像をドロップしてキャラ画像に設定</div>
+      </div>
+      <div class="stage-bar">
+        <span class="sel-label">カード上の画像は<b>ドラッグで移動</b>・<b>ホイール／ピンチで拡大縮小</b></span>
+        <button type="button" class="btn primary" id="exportBtn">PNGで保存</button>
+      </div>
+    </section>
+
+    <section class="controls" id="controls" aria-label="編集">
+      <div class="howto">
+        <strong>操作方法</strong>
+        <ul>
+          <li>右の各項目に入力すると、プレビューにすぐ反映されます。</li>
+          <li>キャラ画像はプレビューのカード部分に<b>ドロップ</b>するか、「画像を選ぶ」から読み込めます。</li>
+          <li>カード上の画像は<b>ドラッグで移動</b>、PCは<b>ホイール</b>・スマホは<b>2本指ピンチ</b>で拡大縮小できます。</li>
+          <li>入力した文章や設定はこのブラウザに自動保存されます（画像は保存されません）。</li>
+        </ul>
+      </div>
+      <div id="panels"></div>
+      <div class="global-actions">
+        <button type="button" class="btn" id="resetBtn">すべて初期状態に戻す</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <section class="credits">
+      <h2>クレジット</h2>
+      <p class="small">
+        フォント：<a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a>（SIL Open Font License）／
+        PNG書き出し：<a href="https://github.com/bubkoo/html-to-image" target="_blank" rel="noopener">html-to-image</a>（MIT License）
+      </p>
+      <p class="small">
+        クラスアイコンなどの画像は、ご自身で用意したものをアップロードしてご利用ください。
+      </p>
+    </section>
+    <section class="disclaimer">
+      <p class="small">
+        本ツールは非公式のファンメイドツールです。『Fate/Grand Order』公式およびTYPE-MOONをはじめとする権利者様とは一切関係ありません。
+        作成した画像の公開は、各権利者様のガイドラインに沿ってお楽しみください。
+      </p>
+    </section>
+  </footer>
+
+  <div class="modal" id="exportModal" hidden>
+    <div class="modal-body wide" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+      <h2 id="exportTitle">画像ができました</h2>
+      <img id="exportImg" alt="作成した画像">
+      <p class="small">うまく保存できないときは、画像を長押し（PCは右クリック）して保存してください。</p>
+      <div class="modal-actions">
+        <a class="btn primary" id="downloadLink" download="status.png">ダウンロード</a>
+        <button type="button" class="btn" id="closeModalBtn">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
+  <script src="js/status.js"></script>
+</body>
+</html>

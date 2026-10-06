@@ -74,6 +74,30 @@ a { color: var(--accent); }
   align-items: start;
 }
 
+/* ---------- ツール切り替え ---------- */
+.tool-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.tool-nav a {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  background: var(--panel);
+}
+.tool-nav a:hover { border-color: var(--gold); color: var(--ink); }
+.tool-nav a[aria-current="page"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
 /* ---------- preview ---------- */
 .preview-pane {
   position: sticky;
